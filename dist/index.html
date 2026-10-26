@@ -6,11 +6,14 @@
  <title>Мат за один! — маленькие шахматные приключения</title>
  <link rel="icon" href="./favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="./styles.css">
 </head>
-<body>
+<body class="simple-ui">
  <div class="page-shell">
   <header class="topbar">
    <a class="brand" href="./" aria-label="Мат за один — главная"><span class="brand-mark" id="brand-mark"></span><span>мат за один<span class="brand-bang">!</span><small>маленькие шахматные приключения</small></span></a>
    <nav class="top-actions" aria-label="Настройки и достижения">
+    <button class="setting-button" id="view-button" aria-pressed="false" title="Переключить подробность экрана">Подробнее</button>
+    <button class="setting-button" id="sound-button" aria-pressed="false" title="Включить или выключить звуки">Звук: выкл</button>
+    <button class="setting-button" id="effects-button" aria-pressed="true" title="Включить или выключить эффекты">Эффекты: вкл</button>
     <button class="plain-button" id="how-button" aria-label="Как играть"><span data-icon="book"></span><span>Как играть</span></button>
     <button class="collection-button" id="album-button" aria-label="Открыть мои награды"><span data-icon="star"></span><strong id="total-stars">0</strong><span class="collection-word">моя коллекция</span></button>
    </nav>
@@ -53,6 +56,7 @@
   </main>
  </div>
  <dialog id="modal" aria-labelledby="modal-title"><button class="modal-close icon-button" id="close-modal" aria-label="Закрыть"><span data-icon="close"></span></button><div id="modal-content"></div></dialog>
+ <div id="celebration" aria-hidden="true"></div>
  <div class="toast" id="toast" role="status" hidden></div>
  <noscript><p class="noscript">Для игры нужно включить JavaScript. Интернет для проверки ходов не нужен.</p></noscript>
  <script type="module" src="./js/app.js"></script>

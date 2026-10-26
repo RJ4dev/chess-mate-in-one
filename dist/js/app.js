@@ -5,8 +5,29 @@ import {loadProgress,saveProgress,recordResult} from './progress.js';
 import {pieceSvg,pieceNames,icon} from './pieces.js';
 import {wrongMoveCopy,finishedRoundView} from './messages.js';
 
+import {loadExperience,saveExperience,createSounds} from './experience.js';
+
 const $=id=>document.getElementById(id);
 let storage;try{storage=window.localStorage;}catch{storage=null;}
+const experience=loadExperience(storage),sounds=createSounds();
+let effectTimer;
+function tone(kind){if(experience.sound&&!document.hidden)sounds.play(kind);}
+function applyExperience(){
+ document.body.classList.toggle('simple-ui',!experience.detailed);document.body.classList.toggle('effects-off',!experience.effects);
+ $('view-button').textContent=experience.detailed?'Проще':'Подробнее';$('view-button').setAttribute('aria-pressed',String(experience.detailed));
+ for(const [id,key,label] of [['sound-button','sound','Звук'],['effects-button','effects','Эффекты']]){
+  $(id).textContent=label+': '+(experience[key]?'вкл':'выкл');$(id).setAttribute('aria-pressed',String(experience[key]));
+ }
+}
+function effect(kind){
+ if(!experience.effects||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+ const frame=document.querySelector('.board-frame');frame.classList.remove('happy-board','try-board');
+ requestAnimationFrame(()=>{if(experience.effects)frame.classList.add(kind==='mate'?'happy-board':'try-board');});
+ if(kind==='mate'){
+  clearTimeout(effectTimer);$('celebration').innerHTML=Array.from({length:18},(_,i)=>`<span style="--x:${(i*37)%100}vw;--drift:${(i%2?1:-1)*(20+i*4)}px;--delay:${i%5*.06}s;--spin:${i*39}deg">${i%3?'✦':'★'}</span>`).join('');
+  effectTimer=setTimeout(()=>$('celebration').replaceChildren(),1700);
+ }
+}
 let progress=loadProgress(storage),mode='ready',lessonIndex=-1,selected=null,focusSquare='a1',paused=false,defenseShown=false;
 let roundId=createRoundId(),state=createRound(pick()),toastTimer,lastSaveSucceeded=true,solutionView=null;
 const clock=new ActiveClock();
@@ -65,6 +86,7 @@ function renderBadges(){
 }
 function render(){
  document.body.classList.toggle('is-ready',mode==='ready');
+ document.body.dataset.phase=mode==='lesson'?'lesson':state.phase;
  renderBoard();renderBadges();
  const lesson=mode==='lesson',p=current(),feedback=state.feedback;
  $('total-stars').textContent=progress.stars;
@@ -124,18 +146,19 @@ function onSquare(square){
  if(mode==='ready')startReady();
  if(!active())return;
  const chess=new Chess(current().fen),piece=chess.get(square);focusSquare=square;
- if(piece?.color==='w'){selected=selected===square?null:square;renderBoard();$('board-caption').textContent=selected?'Теперь выбери клетку с точкой':'Нажми на фигуру, затем на клетку';return;}
+ if(piece?.color==='w'){selected=selected===square?null:square;if(selected)tone('select');renderBoard();$('board-caption').textContent=selected?'Теперь выбери клетку с точкой':'Нажми на фигуру, затем на клетку';return;}
  if(!selected){toast('Сначала выбери белую фигуру.');return;}
  const move=selected+square;selected=null;
  if(mode==='lesson'){
   if(move!==current().mateMovesUci[0]){render();toast('Попробуем ход из учебного примера.');return;}
-  state={...state,phase:'review',feedback:evaluateMove(current().fen,move)};render();return;
+  state={...state,phase:'review',feedback:evaluateMove(current().fen,move)};render();tone(lessonIndex===1?'mate':'move');if(lessonIndex===1)effect('mate');return;
  }
  const outcome=submitMove(state,move,clock.elapsed());
  if(outcome.result.kind==='illegal'){render();toast('Эта фигура так не ходит. Сердечко на месте.');return;}
  state=outcome.state;clock.pause();defenseShown=false;
  if(state.phase==='finished')settle();
  render();
+ tone(outcome.result.kind==='mate'?'mate':'retry');effect(outcome.result.kind==='mate'?'mate':'retry');
  if(outcome.result.kind==='mate'){$('guide-avatar').classList.remove('celebrate');requestAnimationFrame(()=>$('guide-avatar').classList.add('celebrate'));}
 }
 function primary(){
@@ -155,6 +178,7 @@ function primary(){
  if(state.phase==='finished')newRound();
 }
 function hint(){
+ tone('hint');
  if(mode==='ready')startReady();
  if(!active())return;
  if(mode==='lesson'){selected=current().mateMovesUci[0].slice(0,2);render();return;}
@@ -167,6 +191,10 @@ function showHow(){modal(`<div class="modal-eyebrow">ТРИ МАЛЕНЬКИХ �
 function showAlbum(){modal(`<div class="modal-eyebrow">ШАХМАТНЫЙ ИССЛЕДОВАТЕЛЬ</div><h2 class="modal-title" id="modal-title">Моя коллекция</h2><p class="modal-copy">У тебя <strong>${progress.stars}</strong> звёзд и <strong>${progress.solved.length}</strong> разных решённых задач.</p><div class="modal-badges">${badges.map(b=>`<div class="badge-item ${progress.badges.includes(b.id)?'unlocked':''}"><span class="badge-medal">${icon(b.icon)}</span><span><strong>${b.name}</strong><br>${progress.badges.includes(b.id)?'Награда твоя!':b.description}</span></div>`).join('')}</div><p class="modal-copy">Награды остаются с тобой, даже если пропустить день.</p>`);}
 function showParents(){modal(`<div class="modal-eyebrow">СПОКОЙНОЕ ОБУЧЕНИЕ</div><h2 class="modal-title" id="modal-title">Взрослым об игре</h2><div class="modal-copy"><p>Для детей, которые уже знают ходы фигур. Сначала пройдите три примера в разделе «Как играть». При необходимости прочитайте короткие объяснения ребёнку.</p><p>Раунд: 5 задач и 3 общие попытки. Невозможный ход не штрафуется. Скорость даёт только небольшой бонус — ограничения времени нет. В тренировке сердечки и очки не расходуются.</p><p>200 проверенных позиций, преимущественно варианты простых матов ладьёй и ферзём. Проверка работает в браузере. Аккаунтов, рекламы и покупок нет.</p><p>Награды сохраняются после завершения раунда в этом браузере. Незавершённый раунд после закрытия страницы начнётся заново. Очистка браузера удалит награды. Синхронизации между устройствами пока нет.</p><p>Следите за тем, понимает ли ребёнок, почему король не может спастись. Один спокойный раунд лучше гонки за звёздами.</p></div>`);}
 
+$('view-button').onclick=()=>{experience.detailed=!experience.detailed;applyExperience();if(!saveExperience(storage,experience))toast('Вид экрана изменён только на этот сеанс.');};
+$('sound-button').onclick=()=>{experience.sound=!experience.sound;if(experience.sound)tone('select');else sounds.mute();applyExperience();if(!saveExperience(storage,experience))toast('Настройка звука изменена только на этот сеанс.');};
+$('effects-button').onclick=()=>{experience.effects=!experience.effects;if(!experience.effects){clearTimeout(effectTimer);$('celebration').replaceChildren();document.querySelector('.board-frame').classList.remove('happy-board','try-board');}applyExperience();if(!saveExperience(storage,experience))toast('Настройка эффектов изменена только на этот сеанс.');};
+applyExperience();
 document.querySelectorAll('[data-icon]').forEach(el=>el.innerHTML=icon(el.dataset.icon));
 $('brand-mark').innerHTML=pieceSvg('n','w');$('stamp-piece').innerHTML=pieceSvg('n','w');$('guide-avatar').innerHTML=pieceSvg('p','w');
 $('board').addEventListener('click',event=>{const square=event.target.closest('[data-square]')?.dataset.square;if(square)onSquare(square);});
@@ -185,5 +213,5 @@ $('defense-button').onclick=()=>{
  solutionView=null;defenseShown=!defenseShown;render();
 };
 $('solution-button').onclick=()=>{const p=current(),r=evaluateMove(p.fen,p.mateMovesUci[0]);solutionView=r;defenseShown=false;renderBoard();modal(`<div class="modal-eyebrow">РАЗБИРАЕМСЯ ВМЕСТЕ</div><h2 class="modal-title" id="modal-title">Посмотри на решение</h2><p class="modal-copy">${p.explanation}</p><p class="modal-copy">Ход: <strong>${r.move.from} → ${r.move.to}</strong>. После закрытия окна на доске останется матовая позиция.</p>`);};
-document.addEventListener('visibilitychange',()=>{if(document.hidden)clock.pause();else if(active()&&mode==='play')clock.start();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){clock.pause();sounds.mute();}else if(active()&&mode==='play')clock.start();});
 render();
