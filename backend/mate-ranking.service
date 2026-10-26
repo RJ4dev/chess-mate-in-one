@@ -1,0 +1,43 @@
+[Unit]
+Description=Mate in one shared leaderboard
+After=network.target
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=mate-ranking
+Group=mate-ranking
+WorkingDirectory=/opt/mate-in-one
+ExecStart=/usr/bin/node /opt/mate-in-one/backend/server.mjs
+Environment=NODE_ENV=production
+Environment=HOST=127.0.0.1
+Environment=PORT=8787
+Environment=ALLOWED_ORIGIN=https://game.example.com
+Environment=DATA_FILE=/var/lib/mate-ranking/ranking.json
+Environment=TRUST_PROXY_LOOPBACK=1
+StateDirectory=mate-ranking
+StateDirectoryMode=0700
+UMask=0077
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+CapabilityBoundingSet=
+AmbientCapabilities=
+ReadWritePaths=/var/lib/mate-ranking
+MemoryMax=512M
+TasksMax=32
+LimitNOFILE=256
+
+[Install]
+WantedBy=multi-user.target

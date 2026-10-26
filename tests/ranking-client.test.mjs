@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+const m=await import('../dist/js/ranking-client.js').catch(()=>({}));
+test('ranking uses HTTPS only and refuses unconfigured writes',async()=>{assert.equal(typeof m.createRankingClient,'function');const c=m.createRankingClient({base:'http://example.com'});await assert.rejects(c.request('/players',{name:'Kid',pin:'123456'}),/HTTPS|подключ/);});
+test('player scope never overwrites guest progress',()=>{assert.equal(typeof m.playerStorage,'function');const map=new Map([['mate-one-progress-v1','guest']]);const s={getItem:k=>map.get(k),setItem:(k,v)=>map.set(k,v)};const scoped=m.playerStorage(s,'alice');scoped.setItem('mate-one-progress-v1','alice');assert.equal(s.getItem('mate-one-progress-v1'),'guest');assert.equal(scoped.getItem('mate-one-progress-v1'),'alice');});

@@ -54,3 +54,4 @@ export class ActiveClock {
   reset(){this.total=0;this.since=null;}
   elapsed(){return this.total+(this.since===null?0:Math.max(0,this.now()-this.since));}
 }
+export function canResumeClock({mode,phase,paused,modalOpen,hidden}){return mode==='play'&&phase==='playing'&&!paused&&!modalOpen&&!hidden;}
