@@ -7,6 +7,7 @@ import {mergeLearning,normalizeLearning} from './learning-progress.js';
 function eventsFor(progress){
  const events=[];
  for(const e of EXERCISES){
+  if(e.localOnly)continue;
   const result=progress.achievements[e.id];if(!result)continue;
   const lessonId=LESSONS.find(l=>l.steps.some(s=>s.exerciseId===e.id))?.id||(e.goal==='check'?'mini-check':'mini-save');
   for(const assistance of ['assisted','independent'])if(result[assistance])events.push({eventId:`learning${CONTENT_VERSION}_${e.id}_${assistance}`,contentVersion:CONTENT_VERSION,lessonId,exerciseId:e.id,skillId:e.skillId,assistance});

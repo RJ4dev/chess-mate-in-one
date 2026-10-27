@@ -30,7 +30,7 @@ export function createLearningUI({doc,store,animations,blocked,paused,toast,tone
   for(let rank=8;rank>=1;rank--)for(let file=0;file<8;file++){
    const sq=String.fromCharCode(97+file)+rank,p=chess.get(sq),feminine=p&&['r','p'].includes(p.type),color=p?.color==='w'?(feminine?'белая':'белый'):(feminine?'чёрная':'чёрный');
    const classes=['square',(file+rank)%2?'dark':'',p?'has-piece':'',sq===selected?'selected':'',legal.includes(sq)?'target':'',move&&(move.from===sq||move.to===sq)?'last-move':'',p?.type==='k'&&p.color===chess.turn()&&chess.isCheck()?'king-check':''].filter(Boolean).join(' ');
-   html+=`<button class="${classes}" data-square="${sq}" aria-label="${sq}, ${p?color+' '+pieceNames[p.type]:'пустая клетка'}" aria-pressed="${sq===selected}" tabindex="${sq===focus?0:-1}">${p?pieceSvg(p.type,p.color):''}${crosses.has(sq)?'<span class="blocked-cross" aria-hidden="true">×</span>':''}${file===0?`<span class="coordinate rank-label">${rank}</span>`:''}${rank===1?`<span class="coordinate file-label">${String.fromCharCode(97+file)}</span>`:''}</button>`;
+   html+=`<button class="${classes}" data-square="${sq}" aria-label="${sq}, ${p?color+' '+pieceNames[p.type]:'пустая клетка'}${e.targetSquare===sq?', цель задания':''}" aria-pressed="${sq===selected}" tabindex="${sq===focus?0:-1}">${p?pieceSvg(p.type,p.color):''}${e.targetSquare===sq&&['demo','playing','feedback'].includes(s.phase)?'<span class="lesson-goal" aria-hidden="true">★</span>':''}${crosses.has(sq)?'<span class="blocked-cross" aria-hidden="true">×</span>':''}${file===0?`<span class="coordinate rank-label">${rank}</span>`:''}${rank===1?`<span class="coordinate file-label">${String.fromCharCode(97+file)}</span>`:''}</button>`;
   }
   $('board').innerHTML=html;$('board').classList.toggle('paused-board',paused());
   if(restore)$('board').querySelector(`[data-square="${restore}"]`)?.focus({preventScroll:true});
@@ -39,7 +39,7 @@ export function createLearningUI({doc,store,animations,blocked,paused,toast,tone
   if(!lessonState)return;
   const s=lessonState,e=exercise(),lesson=lessonById(s.lessonId,seed),stage=s.steps[Math.min(s.index,s.steps.length-1)].stage;
   doc.body.dataset.phase=s.phase;
-  $('repeat-voice').hidden=!voiceEnabled();
+  $('repeat-voice').hidden=!voiceEnabled()||!!lessonById(s.lessonId,seed).localOnly;
   board();
   $('board-label').textContent=paused()?'Пауза':new Chess(e.fen).turn()==='w'?'Ход белых':'Ход чёрных';
   $('motif').textContent=lesson.title;
@@ -51,18 +51,18 @@ export function createLearningUI({doc,store,animations,blocked,paused,toast,tone
   $('earned').hidden=true;$('defense-button').hidden=true;
   $('solution-button').hidden=!(hintShown&&s.phase==='playing');$('solution-button').textContent='Показать ход';
   $('hint-button').disabled=!active();$('hint-dots').textContent=hintShown?'●':'○';
-  $('hint-text').hidden=!(hintShown&&s.phase==='playing');$('hint-text').textContent=e.goal==='save'?'Можно уйти, взять нападающую фигуру или закрыть линию. Точки — законные ходы.':'Выбрана одна подходящая фигура. Найди клетку, откуда она нападёт на короля.';
+  $('hint-text').hidden=!(hintShown&&s.phase==='playing');$('hint-text').textContent=e.hint||lesson.hint||(e.goal==='save'?'Можно уйти, взять нападающую фигуру или закрыть линию. Точки — законные ходы.':'Выбрана одна подходящая фигура. Найди клетку, откуда она нападёт на короля.');
   $('pause-button').disabled=s.phase==='finished';$('training-button').hidden=true;
-  let title=e.goal==='check'?'Найди шах':e.goal==='save'?'Спаси короля':'Поставь мат',text=s.result?.kind==='illegal'?s.result.text:e.prompt,button='';
+  let title=e.taskTitle||lesson.taskTitle||(e.goal==='check'?'Найди шах':e.goal==='save'?'Спаси короля':'Поставь мат'),text=s.result?.kind==='illegal'?s.result.text:e.prompt,button='';
   if(paused()){title='Немного отдохнём';text='Фигуры подождут.';button='Продолжить';}
-  else if(s.phase==='demo'){title=lesson.title;text=e.goal==='check'?'Шах — это нападение на короля. Посмотрим на пример.':e.goal==='save'?'От шаха нужно защититься. Посмотрим на один способ.':'Мат — это шах, от которого нет законной защиты.';button='Покажи пример';}
+  else if(s.phase==='demo'){title=lesson.title;text=e.introduction||lesson.introduction||(e.goal==='check'?'Шах — это нападение на короля. Посмотрим на пример.':e.goal==='save'?'От шаха нужно защититься. Посмотрим на один способ.':'Мат — это шах, от которого нет законной защиты.');button='Покажи пример';}
   else if(s.phase==='review'){title=s.result.assistance==='independent'?'Ты справился сам!':'Разобрались вместе!';text=s.result.text;button=s.index===s.steps.length-1?'Итог урока':'Следующее задание';}
   else if(s.phase==='feedback'){title='Попробуем ещё';text=s.result.text;button='Вернуть позицию';}
   else if(s.phase==='finished'){title='Занятие пройдено!';text=lesson.summary;button='К выбору режима';}
   $('message').replaceChildren();const h=doc.createElement('h2'),p=doc.createElement('p');h.textContent=title;p.textContent=text;$('message').append(h,p);
-  if(!paused()&&!busy&&!blocked())narrate(title+'. '+text);
+  if(!lesson.localOnly&&!paused()&&!busy&&!blocked())narrate(title+'. '+text);
   $('primary-button').hidden=!button;$('primary-button').innerHTML=button+' '+icon('arrow');$('primary-button').disabled=busy;
-  $('mission-note').textContent='Можно ошибаться и пробовать снова. Учебные задания не меняют рейтинг.';
+  $('mission-note').textContent=lesson.localOnly?'Здесь учимся с текстовыми подсказками. Прогресс — на этом устройстве.':'Можно ошибаться и пробовать снова. Учебные задания не меняют рейтинг.';
   $('board-caption').textContent=busy?'Фигура делает ход…':selected?'Выбери клетку с точкой':s.phase==='demo'?'Сначала посмотрим, затем попробуешь ты':s.phase==='review'?'Посмотри, что изменилось на доске':'Нажми на свою фигуру, затем на клетку';
  }
  async function answer(value){
@@ -88,6 +88,7 @@ export function createLearningUI({doc,store,animations,blocked,paused,toast,tone
   if(isCurrent())busy=false;
  }
  return {
+  get textOnly(){return !!lessonById(lessonState?.lessonId,seed)?.localOnly;},
   render,cancel(){gate.cancel();busy=false;},
   reset(){gate.cancel();busy=false;lessonState=null;progress=store().get();selected=null;},
   refreshProgress(){progress=store().get();if(lessonState&&lessonState.phase!=='finished')protectSeen();},
