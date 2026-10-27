@@ -15,13 +15,15 @@ import {createLearningUI} from './learning-ui.js';
 import {LESSONS,WORLDS,lessonById} from './curriculum.js';
 import {createLearningStore} from './learning-progress.js';
 import {createLearningSync} from './learning-sync.js';
+import {createCoachAudio} from './coach-audio.js';
 
 const $=id=>document.getElementById(id);
 let storage;try{storage=window.localStorage;}catch{storage=null;}
 const experience=loadExperience(storage),sounds=createSounds();
+const coach=createCoachAudio();
 let effectTimer,busy=false,actionEpoch=0,defenseTimer,modalReturnTarget;
 const animations=createAnimations({enabled:()=>experience.effects,reduced:()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches});
-function cancelAction(){actionEpoch++;busy=false;clearTimeout(defenseTimer);animations.cancel();learning.cancel();document.querySelector('.pocket-score')?.classList.remove('score-target');if(typeof state!=='undefined')$('round-score').textContent=String(state.score);if(typeof mode!=='undefined'&&canResumeClock({mode,phase:state.phase,paused,modalOpen:overlayOpen(),hidden:document.hidden}))clock.start();}
+function cancelAction(){coach.cancel();actionEpoch++;busy=false;clearTimeout(defenseTimer);animations.cancel();learning.cancel();document.querySelector('.pocket-score')?.classList.remove('score-target');if(typeof state!=='undefined')$('round-score').textContent=String(state.score);if(typeof mode!=='undefined'&&canResumeClock({mode,phase:state.phase,paused,modalOpen:overlayOpen(),hidden:document.hidden}))clock.start();}
 const profileGate=createRequestGate();
 let session=readSession(storage);
 let scopedStorage=playerStorage(storage,session?.player.id);
@@ -61,7 +63,7 @@ const clock=new ActiveClock();
 const learningStores=new Map();
 function learningStore(){const id=session?.player.id||'';if(!learningStores.has(id))learningStores.set(id,createLearningStore(scopedStorage));return learningStores.get(id);}
 let learningSync;
-const learning=createLearningUI({doc:document,store:learningStore,animations,blocked:()=>mode!=='learn'||overlayOpen()||document.hidden,paused:()=>paused,toast,tone,home:()=>showHome(),onProgress:()=>{void learningSync?.run();}});
+const learning=createLearningUI({doc:document,store:learningStore,animations,blocked:()=>mode!=='learn'||overlayOpen()||document.hidden,paused:()=>paused,toast,tone,home:()=>showHome(),narrate:text=>coach.say(text),onProgress:()=>{void learningSync?.run();}});
 learningSync=createLearningSync({getSession:()=>session,getStore:learningStore,client:ranking,onChange:()=>updateLearningStatus(),onMerged:()=>{learning.refreshProgress();if(mode==='home')renderHome();}});
 let homeView='modes';
 const originalModeCards=$('mode-cards').innerHTML;
@@ -72,7 +74,7 @@ function updateProfile(){
 function showHome(view='modes'){
  cancelAction();clock.pause();if(mode==='play'&&state.answers.length)settle();
  closeMenu(false);if($('modal').open)closeModal();
- mode='home';homeView=view;paused=false;document.body.classList.add('is-home');document.body.classList.remove('is-learning');$('mode-home').hidden=false;
+ $('repeat-voice').hidden=true;mode='home';homeView=view;paused=false;document.body.classList.add('is-home');document.body.classList.remove('is-learning');$('mode-home').hidden=false;
  renderHome();updateProfile();$('mode-title').focus({preventScroll:true});
 }
 function renderHome(){
@@ -164,6 +166,7 @@ function render(){
  updateProfile();
  if(mode==='home'){renderHome();return;}
  if(mode==='learn'){learning.render();return;}
+ $('repeat-voice').hidden=true;
  $('training-button').hidden=mode==='lesson';$('solution-button').textContent='Посмотреть решение';$('primary-button').disabled=false;
  document.body.classList.toggle('is-ready',mode==='ready');
  document.body.dataset.phase=mode==='lesson'?'lesson':state.phase;
@@ -332,6 +335,15 @@ document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!$('main-me
 document.addEventListener('pointerdown',event=>{if(!$('main-menu').contains(event.target)&&!$('menu-button').contains(event.target))closeMenu(false);});
 $('main-menu').addEventListener('focusout',event=>{if(event.relatedTarget&&!$('main-menu').contains(event.relatedTarget)&&event.relatedTarget!==$('menu-button'))closeMenu(false);});
 $('settings-button').onclick=showSettings;
+$('voice-button').onclick=()=>{
+ const wanted=!coach.enabled;coach.enable(wanted);
+ $('voice-button').textContent='Голос помощника: '+(coach.enabled?'вкл':'выкл');
+ $('voice-button').setAttribute('aria-pressed',String(coach.enabled));
+ $('repeat-voice').disabled=!coach.enabled;
+ $('voice-status').textContent=wanted&&!coach.enabled?'Русский голос на устройстве недоступен. Текстовые пояснения остаются.':'Голос включается отдельно от звуков. Используется русский голос устройства.';
+ if(coach.enabled)coach.say('Привет! Будем учиться шахматам вместе.');
+};
+$('repeat-voice').onclick=()=>{if(mode==='learn'&&!paused&&!overlayOpen()){learning.render();coach.repeat();}};
 $('modes-button').onclick=()=>showHome();
 $('exit-button').onclick=()=>showHome();
 document.querySelector('.brand').onclick=event=>{event.preventDefault();showHome();};
