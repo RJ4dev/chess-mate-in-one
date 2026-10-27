@@ -77,7 +77,8 @@
    <button class="setting-button" id="view-button" aria-pressed="false">Подробно: выкл</button>
    <button class="setting-button" id="sound-button" aria-pressed="false">Звук: выкл</button>
    <button class="setting-button" id="voice-button" aria-pressed="false">Голос помощника: выкл</button>
-   <p id="voice-status">Голос включается отдельно от звуков. Используется русский голос устройства.</p>
+   <label for="voice-volume">Громкость помощника</label><input id="voice-volume" type="range" min="0" max="100" value="100" step="5" aria-label="Громкость помощника">
+   <p id="voice-status">Голос Ксении включается отдельно от игровых звуков.</p>
    <button class="setting-button" id="effects-button" aria-pressed="true">Эффекты: вкл</button>
   </div>
   <button class="secondary-button" id="training-button">Тренировка без сердечек</button>

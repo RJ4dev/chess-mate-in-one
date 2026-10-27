@@ -1,0 +1,4 @@
+Synthetic narration: Silero Team, Silero v5_6_ru, speaker kseniya.
+https://github.com/snakers4/silero-models
+Model license: https://creativecommons.org/licenses/by-nc-sa/4.0/
+Text for Chess Mate in One; generated locally, normalized loudness and MP3 encoding. Noncommercial educational game.

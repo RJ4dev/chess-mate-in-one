@@ -15,12 +15,14 @@ import {createLearningUI} from './learning-ui.js';
 import {LESSONS,WORLDS,lessonById} from './curriculum.js';
 import {createLearningStore} from './learning-progress.js';
 import {createLearningSync} from './learning-sync.js';
-import {createCoachAudio} from './coach-audio.js';
+import {createCoachAudio,voiceAssetBase} from './coach-audio.js';
+import {VOICE_CLIPS} from './voice-pack.js';
 
 const $=id=>document.getElementById(id);
 let storage;try{storage=window.localStorage;}catch{storage=null;}
 const experience=loadExperience(storage),sounds=createSounds();
-const coach=createCoachAudio();
+const appScript=[...document.querySelectorAll('script[type="module"][src]')].find(script=>new URL(script.src).pathname.endsWith('/js/app.js'));
+const coach=createCoachAudio({clips:VOICE_CLIPS,assetBase:voiceAssetBase(document.URL,appScript?.src)});
 let effectTimer,busy=false,actionEpoch=0,defenseTimer,modalReturnTarget;
 const animations=createAnimations({enabled:()=>experience.effects,reduced:()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches});
 function cancelAction(){coach.cancel();actionEpoch++;busy=false;clearTimeout(defenseTimer);animations.cancel();learning.cancel();document.querySelector('.pocket-score')?.classList.remove('score-target');if(typeof state!=='undefined')$('round-score').textContent=String(state.score);if(typeof mode!=='undefined'&&canResumeClock({mode,phase:state.phase,paused,modalOpen:overlayOpen(),hidden:document.hidden}))clock.start();}
@@ -341,9 +343,10 @@ $('voice-button').onclick=()=>{
  $('voice-button').setAttribute('aria-pressed',String(coach.enabled));
  $('repeat-voice').disabled=!coach.enabled;
  $('repeat-voice').hidden=mode!=='learn'||!coach.enabled;
- $('voice-status').textContent=wanted&&!coach.enabled?'Русский голос на устройстве недоступен. Текстовые пояснения остаются.':'Голос включается отдельно от звуков. Используется русский голос устройства.';
+ $('voice-status').textContent=wanted&&!coach.enabled?'Озвучка недоступна. Текстовые пояснения остаются.':'Голос Ксении включается отдельно от игровых звуков.';
  if(coach.enabled)coach.say('Привет! Будем учиться шахматам вместе.');
 };
+$('voice-volume').oninput=event=>coach.setVolume(Number(event.target.value)/100);
 $('repeat-voice').onclick=()=>{if(mode==='learn'&&!paused&&!overlayOpen()){learning.render();coach.repeat();}};
 $('modes-button').onclick=()=>showHome();
 $('exit-button').onclick=()=>showHome();
