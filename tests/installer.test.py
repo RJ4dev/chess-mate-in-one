@@ -152,6 +152,96 @@ class PreflightTests(unittest.TestCase):
         self.download.assert_not_called()
 
 
+class BackendOnlyTests(unittest.TestCase):
+    setUp = PreflightTests.setUp
+    fake_run = staticmethod(PreflightTests.fake_run)
+    def backend_args(self):
+        return VALID_ARGS + ["--hostname", "roma-vps.tailcc6aea.ts.net", "--backend-only"]
+
+    def test_backend_only_requires_tailnet_hostname(self):
+        for extra in ([], ["--hostname", "chess.example.org"]):
+            with self.assertRaises(installer.InstallError):
+                installer.arguments(VALID_ARGS + ["--backend-only"] + extra)
+
+    def test_backend_only_does_not_require_caddy_public_ip_or_https_ports(self):
+        self.exists.return_value = False
+        with patch.object(installer, "check_backend_port") as local, patch.object(installer, "detect_hostname", side_effect=AssertionError("No public-IP lookup")):
+            plan = installer.preflight(installer.arguments(self.backend_args()))
+        self.assertTrue(plan.backend_only)
+        self.assertEqual(plan.caddy, "")
+        local.assert_called_once()
+        self.ports.assert_not_called()
+        self.assertFalse(any("is-active" in call.args[0] for call in self.run.call_args_list))
+
+    def test_backend_only_still_refuses_occupied_loopback_port(self):
+        output = io.StringIO()
+        with patch.object(installer, "check_backend_port", side_effect=installer.InstallError("port_unavailable", "8787 occupied", port=8787)), contextlib.redirect_stdout(output):
+            code = installer.main(self.backend_args())
+        self.assertEqual(code, 1)
+        self.assertEqual(json.loads(output.getvalue())["status"], "port_unavailable")
+        self.install.assert_not_called()
+        self.download.assert_not_called()
+
+    def test_backend_only_preflight_reports_ready_without_caddy(self):
+        self.exists.return_value = False
+        output = io.StringIO()
+        with patch.object(installer, "check_backend_port"), contextlib.redirect_stdout(output):
+            code = installer.main(self.backend_args() + ["--preflight-only"])
+        self.assertEqual(code, 0)
+        self.assertEqual(json.loads(output.getvalue())["status"], "ready")
+        self.install.assert_not_called()
+
+    def test_backend_only_never_claims_public_https_is_ready(self):
+        from dataclasses import replace
+        plan = replace(PLAN, backend_only=True, caddy="")
+        with patch.object(installer, "leaderboard_healthy", return_value=True) as healthy:
+            self.assertEqual(installer.probe(plan), ("backend_installed", 0))
+        self.assertTrue(all(call.args[0].startswith("http://127.0.0.1:") for call in healthy.call_args_list))
+        self.assertIn("TRUST_PROXY_LOOPBACK=0", installer.backend_unit(plan))
+
+    def test_install_creates_only_backend_user_unit_and_private_data(self):
+        self.stack.close()
+        import tempfile, os
+        from dataclasses import replace
+        plan = replace(PLAN, backend_only=True, caddy="")
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            with contextlib.ExitStack() as stack:
+                for key, value in {"APP_DIR":root/"app", "CONFIG_DIR":root/"config", "DATA_DIR":root/"data", "TLS_DIR":root/"tls", "UNIT_DIR":root}.items():
+                    stack.enter_context(patch.object(installer, key, value))
+                command = stack.enter_context(patch.object(installer, "run"))
+                stack.enter_context(patch.object(installer.pwd, "getpwnam", return_value=SimpleNamespace(pw_uid=os.getuid(), pw_gid=os.getgid())))
+                installer.install(plan, b"server source")
+            self.assertTrue((root/"chess-ranking.service").is_file())
+            self.assertFalse((root/"chess-ranking-https.service").exists())
+            self.assertFalse((root/"config"/"Caddyfile").exists())
+            self.assertFalse((root/"tls").exists())
+            self.assertEqual((root/"data").stat().st_mode & 0o777, 0o700)
+            self.assertEqual((root/"app"/"server.mjs").read_bytes(), b"server source")
+            commands = [call.args[0] for call in command.call_args_list]
+            self.assertEqual(sum("--system" in cmd for cmd in commands), 1)
+            self.assertTrue(any(cmd == [plan.systemctl,"enable","--now","chess-ranking.service"] for cmd in commands))
+            self.assertFalse(any("caddy" in " ".join(cmd) for cmd in commands))
+
+    def test_backend_rollback_does_not_disable_unowned_funnel(self):
+        commands = installer.rollback_commands(True)
+        self.assertTrue(any("chess-ranking.service" in cmd for cmd in commands))
+        self.assertFalse(any("tailscale" in cmd for cmd in commands))
+
+    def test_backend_only_result_has_port_and_explicit_public_pending(self):
+        from dataclasses import replace
+        plan = replace(PLAN, hostname="roma-vps.tailcc6aea.ts.net", caddy="", backend_only=True)
+        output = io.StringIO()
+        with patch.object(installer, "preflight", return_value=plan), patch.object(installer, "probe", return_value=("backend_installed",0)), contextlib.redirect_stdout(output):
+            code = installer.main(self.backend_args())
+        result = json.loads(output.getvalue())
+        self.assertEqual(code, 0)
+        self.assertEqual(result["api_base"], "https://roma-vps.tailcc6aea.ts.net:10000")
+        self.assertEqual(result["status"], "backend_installed")
+        self.assertFalse(result["public_https_verified"])
+
+
+
 class SourceAndProbeTests(unittest.TestCase):
     def test_network_deadline_bounds_even_blocked_dns(self):
         release = threading.Event()

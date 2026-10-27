@@ -4,6 +4,8 @@
 Requires Linux/systemd, root, Node >=20 and distro /usr/bin/caddy already present.
 Install the distro Caddy package separately, then stop/disable its default service
 if it is unused. This installer never changes that service, packages or firewalls.
+Use --backend-only --hostname <node.ts.net> for an existing Tailscale proxy.
+That mode installs only the localhost backend; Funnel publication is a separate owner action.
 All output is one JSON object; exit 2 means installed but HTTPS is still pending.
 """
 
@@ -60,6 +62,7 @@ class Plan:
     useradd: str
     nologin: str
     runuser: str = "/usr/sbin/runuser"
+    backend_only: bool = False
 
 
 def arguments(argv=None):
@@ -67,6 +70,7 @@ def arguments(argv=None):
     parser.add_argument("--source-commit", required=True)
     parser.add_argument("--source-sha256", required=True)
     parser.add_argument("--hostname", help="Public DNS hostname; otherwise use chess.<public-IPv4>.sslip.io")
+    parser.add_argument("--backend-only", action="store_true", help="Install only localhost backend for a separate Tailscale Funnel on port 10000")
     parser.add_argument("--preflight-only", action="store_true", help="Check the host without downloading or changing anything")
     parser.add_argument("--allow-missing-caddy", action="store_true", help="With --preflight-only, complete other checks even if Caddy is absent")
     args = parser.parse_args(argv)
@@ -80,6 +84,8 @@ def arguments(argv=None):
     args.source_sha256 = args.source_sha256.lower()
     if args.hostname is not None:
         args.hostname = validate_hostname(args.hostname)
+    if args.backend_only and (not args.hostname or not args.hostname.endswith(".ts.net")):
+        raise InstallError("tailnet_hostname_required", "--backend-only requires --hostname with this node's .ts.net DNS name.")
     return args
 
 
@@ -168,6 +174,14 @@ def check_ports():
                 raise InstallError("port_unavailable", f"TCP port {port} is unavailable; no firewall or service settings were changed.", port=port) from error
 
 
+def check_backend_port():
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+            probe.bind(("127.0.0.1", 8787))
+    except OSError as error:
+        raise InstallError("port_unavailable", "Local backend TCP port 8787 is unavailable; nothing was changed.", port=8787) from error
+
+
 def preflight(args):
     if sys.platform != "linux" or os.geteuid() != 0:
         raise InstallError("linux_root_required", "Run this installer as root on the target Linux VPS.")
@@ -178,8 +192,8 @@ def preflight(args):
     match = re.fullmatch(r"v(\d+)\.\d+\.\d+", version)
     if not match or int(match[1]) < 20:
         raise InstallError("unsupported_node", "Node >=20 must already be installed; nothing was changed.", version=version)
-    caddy_present = Path("/usr/bin/caddy").exists()
-    if not caddy_present and not (args.preflight_only and args.allow_missing_caddy):
+    caddy_present = not args.backend_only and Path("/usr/bin/caddy").exists()
+    if not args.backend_only and not caddy_present and not (args.preflight_only and args.allow_missing_caddy):
         raise InstallError("missing_caddy", "Install the distro Caddy package separately. Stop/disable its default service only if unused, then rerun. Nothing was changed.")
     caddy = secure_path("/usr/bin/caddy", executable=True) if caddy_present else ""
     systemctl = executable("systemctl", "missing_systemctl")
@@ -202,11 +216,14 @@ def preflight(args):
             pass
         else:
             raise InstallError("existing_installation", f"Fresh installation only: user {user} already exists.")
-    for unit in ("nginx.service", "apache2.service", "httpd.service", "caddy.service"):
+    for unit in (() if args.backend_only else ("nginx.service", "apache2.service", "httpd.service", "caddy.service")):
         if run([systemctl, "is-active", unit], check=False).stdout.strip() in {"active", "activating", "reloading"}:
             raise InstallError("existing_web_server", f"{unit} is active. This installer does not replace existing web servers.")
-    check_ports()
-    return Plan(args.hostname or detect_hostname(), node, caddy, systemctl, useradd, nologin, runuser)
+    if args.backend_only:
+        check_backend_port()
+    else:
+        check_ports()
+    return Plan(args.hostname or detect_hostname(), node, caddy, systemctl, useradd, nologin, runuser, args.backend_only)
 
 
 def bounded_network(operation, timeout):
@@ -271,7 +288,7 @@ Environment=HOST=127.0.0.1
 Environment=PORT=8787
 Environment=DATA_FILE=/var/lib/chess-ranking/players.json
 Environment=ALLOWED_ORIGIN={ORIGIN}
-Environment=TRUST_PROXY_LOOPBACK=1
+Environment=TRUST_PROXY_LOOPBACK={0 if plan.backend_only else 1}
 StateDirectory=chess-ranking
 StateDirectoryMode=0700
 UMask=0077
@@ -343,7 +360,10 @@ def caddy_config(plan):
 """
 
 
-def rollback_commands():
+def rollback_commands(backend_only=False):
+    if backend_only:
+        return ["systemctl disable --now chess-ranking.service",
+                "rm -f /etc/systemd/system/chess-ranking.service", "systemctl daemon-reload"]
     return ["systemctl disable --now chess-ranking-https.service chess-ranking.service",
             "rm -f /etc/systemd/system/chess-ranking-https.service /etc/systemd/system/chess-ranking.service",
             "systemctl daemon-reload"]
@@ -360,23 +380,27 @@ def write_new(path, content, mode):
 
 
 def install(plan, source):
-    for user, directory in zip(USERS, (DATA_DIR, TLS_DIR)):
+    user_directories = ((USERS[0], DATA_DIR),) if plan.backend_only else tuple(zip(USERS, (DATA_DIR, TLS_DIR)))
+    for user, directory in user_directories:
         run([plan.useradd, "--system", "--user-group", "--home-dir", str(directory), "--no-create-home", "--shell", plan.nologin, user])
     for directory in (APP_DIR, CONFIG_DIR):
         directory.mkdir(mode=0o755)
         directory.chmod(0o755)
-    for user, directory in zip(USERS, (DATA_DIR, TLS_DIR)):
+    for user, directory in user_directories:
         directory.mkdir(mode=0o700)
         directory.chmod(0o700)
         account = pwd.getpwnam(user)
         os.chown(directory, account.pw_uid, account.pw_gid)
     write_new(APP_DIR / "server.mjs", source, 0o644)
-    write_new(CONFIG_DIR / "Caddyfile", caddy_config(plan), 0o644)
     write_new(UNIT_DIR / UNITS[0], backend_unit(plan), 0o644)
-    write_new(UNIT_DIR / UNITS[1], https_unit(plan), 0o644)
-    run([plan.runuser, "--user", "chess-ranking-https", "--", plan.caddy, "validate", "--config", str(CONFIG_DIR / "Caddyfile"), "--adapter", "caddyfile"])
+    units = (UNITS[0],)
+    if not plan.backend_only:
+        write_new(CONFIG_DIR / "Caddyfile", caddy_config(plan), 0o644)
+        write_new(UNIT_DIR / UNITS[1], https_unit(plan), 0o644)
+        run([plan.runuser, "--user", "chess-ranking-https", "--", plan.caddy, "validate", "--config", str(CONFIG_DIR / "Caddyfile"), "--adapter", "caddyfile"])
+        units = UNITS
     run([plan.systemctl, "daemon-reload"])
-    run([plan.systemctl, "enable", "--now", *UNITS], timeout=30)
+    run([plan.systemctl, "enable", "--now", *units], timeout=30)
 
 
 def leaderboard_healthy(url, timeout):
@@ -397,6 +421,8 @@ def probe(plan):
         if time.monotonic() >= local_deadline:
             return "installed_backend_unhealthy", 1
         time.sleep(min(1, max(0, local_deadline - time.monotonic())))
+    if plan.backend_only:
+        return "backend_installed", 0
     while time.monotonic() < deadline:
         if leaderboard_healthy(f"https://{plan.hostname}/leaderboard", min(4, max(0.1, deadline - time.monotonic()))):
             return "installed", 0
@@ -410,8 +436,8 @@ def main(argv=None):
         args = arguments(argv)
         plan = preflight(args)
         if args.preflight_only:
-            print(json.dumps({"status": "ready" if plan.caddy else "ready_except_caddy", "hostname": plan.hostname,
-                              "api_base": f"https://{plan.hostname}", "node": plan.node, "caddy": plan.caddy or None,
+            print(json.dumps({"status": "ready" if plan.caddy or plan.backend_only else "ready_except_caddy", "hostname": plan.hostname,
+                              "api_base": f"https://{plan.hostname}" + (":10000" if plan.backend_only else ""), "node": plan.node, "caddy": plan.caddy or None,
                               "mutations_started": False, "firewall_changed": False}, sort_keys=True))
             return 0
         source = download_source(args)
@@ -421,22 +447,25 @@ def main(argv=None):
         mutated = True
         install(plan, source)
         status, exit_code = probe(plan)
-        result = {"status": status, "hostname": plan.hostname, "api_base": f"https://{plan.hostname}",
+        result = {"status": status, "hostname": plan.hostname, "api_base": f"https://{plan.hostname}" + (":10000" if plan.backend_only else ""),
                   "frontend_origin": ORIGIN, "source_commit": args.source_commit, "source_sha256": args.source_sha256,
-                  "rollback_commands": rollback_commands(), "rollback_keeps": [str(DATA_DIR), str(TLS_DIR)],
+                  "rollback_commands": rollback_commands(plan.backend_only), "rollback_keeps": [str(DATA_DIR), str(TLS_DIR)],
                   "firewall_changed": False}
-        if status != "installed":
+        if plan.backend_only:
+            result["public_https_verified"] = False
+            result["next_step"] = "Publish only Funnel HTTPS port 10000 to http://127.0.0.1:8787; leave existing Serve routes intact. Verify public HTTPS before setting frontend RANKING_API."
+        elif status != "installed":
             result["next_step"] = "Inspect journalctl -u chess-ranking -u chess-ranking-https. Check public DNS and inbound TCP 80/443; no firewall rules were changed. Recheck HTTPS /leaderboard after ACME issuance."
     except InstallError as error:
         result = {"status": error.code, "message": str(error), **error.details, "mutations_started": mutated}
         if mutated:
-            result["rollback_commands"] = rollback_commands()
+            result["rollback_commands"] = rollback_commands(plan.backend_only)
             result["rollback_keeps"] = [str(DATA_DIR), str(TLS_DIR)]
         exit_code = 1
     except (OSError, KeyError) as error:
         result = {"status": "installation_failed", "message": str(error), "mutations_started": mutated}
         if mutated:
-            result["rollback_commands"] = rollback_commands()
+            result["rollback_commands"] = rollback_commands(plan.backend_only)
             result["rollback_keeps"] = [str(DATA_DIR), str(TLS_DIR)]
         exit_code = 1
     print(json.dumps(result, sort_keys=True))
