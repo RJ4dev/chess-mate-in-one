@@ -34,3 +34,20 @@ test('a delayed response from the previous profile never changes the new profile
  const pending=worker.run();session={player:{id:'b'},token:'b'};store=b;worker.cancel();release({learning:{enabled:true,contentVersion:1}});await pending;
  assert.deepEqual(b.get().achievements,{});assert.equal(worker.status,'local');
 });
+
+test('new beginner facts remain local without poisoning older server synchronization',async()=>{
+ const {BEGINNER_TOPICS,lessonById}=await import('../dist/js/curriculum.js');
+ const {exerciseById}=await import('../dist/js/exercises.js');
+ const lesson=lessonById(BEGINNER_TOPICS[0].lessonIds[0]),exercise=exerciseById(lesson.steps[0].exerciseId);
+ const store=createLearningStore(null);let p=recordLearning(store.get(),event);
+ p=recordLearning(p,{...event,eventId:'beginner-event',lessonId:lesson.id,exerciseId:exercise.id,skillId:exercise.skillId});
+ p.resume={lessonId:lesson.id,index:1};store.save(p);
+ const sent=[];const worker=sync.createLearningSync({getSession:()=>({player:{id:'a'},token:'a'}),getStore:()=>store,client:{async request(route,data){
+  if(route==='/capabilities')return {learning:{enabled:true,contentVersion:1}};
+  if(route==='/learning')return {learning:{version:1,achievements:{},completed:[]}};
+  sent.push(...data.events);assert.ok(data.events.every(e=>e.lessonId==='check'));
+  return {learning:{version:1,achievements:{},completed:[]},accepted:data.events.map(e=>e.eventId)};
+ }}});
+ await worker.run();assert.equal(worker.status,'synced');assert.equal(sent.length,1);
+ assert.equal(store.get().achievements[exercise.id].independent,true);assert.equal(store.get().resume.lessonId,lesson.id);
+});

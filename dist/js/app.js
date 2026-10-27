@@ -12,7 +12,7 @@ import {createRankingClient,playerStorage,readSession,createRequestGate} from '.
 import {fitGameBoard} from './viewport.js';
 import {loadExperience,saveExperience,createSounds} from './experience.js';
 import {createLearningUI} from './learning-ui.js';
-import {LESSONS,WORLDS,lessonById} from './curriculum.js';
+import {LESSONS,WORLDS,BEGINNER_WORLDS,lessonById} from './curriculum.js';
 import {createLearningStore} from './learning-progress.js';
 import {createLearningSync} from './learning-sync.js';
 import {createCoachAudio,voiceAssetBase} from './coach-audio.js';
@@ -81,8 +81,9 @@ function showHome(view='modes'){
 }
 function renderHome(){
  const p=learningStore().get(),cards=$('mode-cards');
+ $('mode-home').dataset.view=homeView;
  $('mode-title').textContent=homeView==='quest'?'Карта приключения':homeView==='lessons'?'Учимся шахматам':homeView==='practice'?'Выбери мини-игру':'Во что сыграем?';
- $('home-copy').textContent=homeView==='lessons'?'Первые уроки для тех, кто уже знаком с ходами фигур':homeView==='quest'?'Любую главу можно повторить':'Короткие задания без спешки';
+ $('home-copy').textContent=homeView==='lessons'?'Начни с ходов фигур или выбери уже знакомую тему':homeView==='quest'?'Любую главу можно повторить':'Короткие задания без спешки';
  $('home-back').hidden=homeView==='modes';
  $('continue-learning').hidden=!p.resume||homeView==='practice';
  if(p.resume)$('continue-learning').textContent='Продолжить: '+lessonById(p.resume.lessonId,p.resume.seed).title;
@@ -93,13 +94,13 @@ function renderHome(){
  }else if(homeView==='practice'){
   cards.innerHTML=[['mini-check','Найди шах','Напади на короля любым правильным ходом','♜'],['mini-save','Спаси короля','Уйди, возьми нападающего или закрой линию','♔']].map(([id,title,text,symbol])=>`<button class="mode-card" data-lesson="${id}"><span class="mode-symbol" aria-hidden="true">${symbol}</span><span><strong>${title}</strong><small>${text}</small></span><span aria-hidden="true">→</span></button>`).join('');
  }else{
-  const groups=homeView==='quest'?WORLDS:[{title:'Первые открытия',lessonIds:LESSONS.map(l=>l.id)}];
-  cards.innerHTML=groups.map(w=>`<div class="world-group"><h2>${w.title}</h2>${w.lessonIds.map(id=>{const l=lessonById(id);return `<button class="mode-card" data-lesson="${id}"><span class="mode-symbol" aria-hidden="true">${p.completed.includes(id)?'✓':'♙'}</span><span><strong>${l.title}</strong><small>${p.completed.includes(id)?'Занятие пройдено · можно повторить':'4 шага · без потери сердечек'}</small></span><span aria-hidden="true">→</span></button>`;}).join('')}</div>`).join('');
+  const groups=homeView==='quest'?[...BEGINNER_WORLDS,...WORLDS]:[...BEGINNER_WORLDS,{title:'Уже знаю ходы фигур',lessonIds:LESSONS.filter(l=>!l.localOnly).map(l=>l.id)}];
+  cards.innerHTML=groups.map(w=>`<div class="world-group"><h2>${w.title}</h2>${w.lessonIds.map(id=>{const l=lessonById(id);return `<button class="mode-card" data-lesson="${id}"><span class="mode-symbol" aria-hidden="true">${p.completed.includes(id)?'✓':'♙'}</span><span><strong>${l.title}</strong><small>${p.completed.includes(id)?'Занятие пройдено · можно повторить':l.steps.length+' шага · '+(l.localOnly?'на этом устройстве':'без потери сердечек')}</small></span><span aria-hidden="true">→</span></button>`;}).join('')}</div>`).join('');
  }
  cards.querySelectorAll('[data-lesson]').forEach(b=>b.onclick=()=>startLearning(b.dataset.lesson));
 }
 function updateLearningStatus(){
- $('learning-status').textContent=!learningStore().durable?'Браузер не сохраняет продолжение после закрытия страницы.':learningSync?.status==='synced'?'Учебные достижения синхронизированы. Продолжение занятия — на этом устройстве.':learningSync?.status==='syncing'?'Сверяем учебные достижения…':session?'Учебный прогресс на этом устройстве. Серверная синхронизация пока недоступна.':'Гость: учебный прогресс хранится на этом устройстве. Можно играть без регистрации.';
+ $('learning-status').textContent=!learningStore().durable?'Браузер не сохраняет продолжение после закрытия страницы.':learningSync?.status==='synced'?'Шах, защита и мат синхронизированы. Новые уроки и продолжение — на этом устройстве.':learningSync?.status==='syncing'?'Сверяем учебные достижения…':session?'Учебный прогресс на этом устройстве. Серверная синхронизация пока недоступна.':'Гость: учебный прогресс хранится на этом устройстве. Можно играть без регистрации.';
 }
 function leaveHome(){$('mode-home').hidden=true;document.body.classList.remove('is-home');document.body.classList.remove('is-learning');}
 function startLearning(id,resume){cancelAction();clock.pause();if(mode==='play'&&state.answers.length)settle();closeMenu(false);closeModal();leaveHome();mode='learn';paused=false;document.body.classList.add('is-learning');learning.start(id,resume);updateProfile();}
@@ -342,12 +343,12 @@ $('voice-button').onclick=()=>{
  $('voice-button').textContent='Голос помощника: '+(coach.enabled?'вкл':'выкл');
  $('voice-button').setAttribute('aria-pressed',String(coach.enabled));
  $('repeat-voice').disabled=!coach.enabled;
- $('repeat-voice').hidden=mode!=='learn'||!coach.enabled;
+ $('repeat-voice').hidden=mode!=='learn'||!coach.enabled||learning.textOnly;
  $('voice-status').textContent=wanted&&!coach.enabled?'Озвучка недоступна. Текстовые пояснения остаются.':'Голос Ксении включается отдельно от игровых звуков.';
  if(coach.enabled)coach.say('Привет! Будем учиться шахматам вместе.');
 };
 $('voice-volume').oninput=event=>coach.setVolume(Number(event.target.value)/100);
-$('repeat-voice').onclick=()=>{if(mode==='learn'&&!paused&&!overlayOpen()){learning.render();coach.repeat();}};
+$('repeat-voice').onclick=()=>{if(mode==='learn'&&!learning.textOnly&&!paused&&!overlayOpen()){learning.render();coach.repeat();}};
 $('modes-button').onclick=()=>showHome();
 $('exit-button').onclick=()=>showHome();
 document.querySelector('.brand').onclick=event=>{event.preventDefault();showHome();};

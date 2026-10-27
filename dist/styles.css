@@ -44,3 +44,7 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}.welcome,.discovery,
 @media(max-height:500px){.mode-home{gap:7px;padding:4px;justify-content:flex-start}.home-heading .eyebrow,.home-heading p{display:none}.home-heading h1{font-size:23px;margin:0}.mode-cards{gap:8px}.mode-card{min-height:60px;padding:8px 12px;border-radius:12px}.mode-card strong{font-size:16px;margin-bottom:2px}.mode-card small{font-size:10px;line-height:1.2}.mode-symbol{font-size:28px;width:28px}.home-note{font-size:10px;margin:0}.mode-home>.primary-button,.mode-home>.secondary-button{min-height:32px;padding:5px 10px;font-size:12px}.world-group h2{font-size:13px;margin:0 0 4px}.world-group .mode-card{min-height:58px;margin-bottom:6px}.world-group .mode-card strong{font-size:14px}.is-learning .mission-card h2{font-size:18px}}
 
 .home-button{flex:none;min-height:32px;padding:4px 7px;border:1px solid #bccfba;border-radius:9px;background:#fffef8;color:var(--ink);font:inherit;font-size:11px;font-weight:700;white-space:nowrap}.home-button:hover{background:#e7efd9}.home-button:focus-visible{outline:3px solid #648b63;outline-offset:2px}.board-caption>#board-caption{min-width:0;flex:1}.board-caption>.home-button{min-width:74px}
+
+.lesson-goal{position:absolute;right:3px;top:1px;font-size:clamp(14px,3.8vw,24px);line-height:1;color:#d59416;text-shadow:0 1px 1px #fff,0 0 3px #fff;pointer-events:none;z-index:2}
+
+.mode-home[data-view="lessons"],.mode-home[data-view="quest"]{justify-content:flex-start}
