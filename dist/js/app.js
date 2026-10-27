@@ -9,14 +9,15 @@ import {kingGuide} from './king-guide.js';
 import {createAnimations} from './animations.js';
 import {RANKING_API} from './config.js';
 import {createRankingClient,playerStorage,readSession,createRequestGate} from './ranking-client.js';
+import {fitGameBoard} from './viewport.js';
 import {loadExperience,saveExperience,createSounds} from './experience.js';
 
 const $=id=>document.getElementById(id);
 let storage;try{storage=window.localStorage;}catch{storage=null;}
 const experience=loadExperience(storage),sounds=createSounds();
-let effectTimer,busy=false,actionEpoch=0,defenseTimer;
+let effectTimer,busy=false,actionEpoch=0,defenseTimer,modalReturnTarget;
 const animations=createAnimations({enabled:()=>experience.effects,reduced:()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches});
-function cancelAction(){actionEpoch++;busy=false;clearTimeout(defenseTimer);animations.cancel();document.querySelector('.pocket-score')?.classList.remove('score-target');if(typeof state!=='undefined')$('round-score').textContent=String(state.score);if(typeof mode!=='undefined'&&canResumeClock({mode,phase:state.phase,paused,modalOpen:$('modal').open,hidden:document.hidden}))clock.start();}
+function cancelAction(){actionEpoch++;busy=false;clearTimeout(defenseTimer);animations.cancel();document.querySelector('.pocket-score')?.classList.remove('score-target');if(typeof state!=='undefined')$('round-score').textContent=String(state.score);if(typeof mode!=='undefined'&&canResumeClock({mode,phase:state.phase,paused,modalOpen:overlayOpen(),hidden:document.hidden}))clock.start();}
 const profileGate=createRequestGate();
 let session=readSession(storage);
 let scopedStorage=playerStorage(storage,session?.player.id);
@@ -36,7 +37,7 @@ function queueScore(){
 function tone(kind){if(experience.sound&&!document.hidden)sounds.play(kind);}
 function applyExperience(){
  document.body.classList.toggle('simple-ui',!experience.detailed);document.body.classList.toggle('effects-off',!experience.effects);
- $('view-button').textContent=experience.detailed?'Проще':'Подробнее';$('view-button').setAttribute('aria-pressed',String(experience.detailed));
+ $('view-button').textContent='Подробно: '+(experience.detailed?'вкл':'выкл');$('view-button').setAttribute('aria-pressed',String(experience.detailed));
  for(const [id,key,label] of [['sound-button','sound','Звук'],['effects-button','effects','Эффекты']]){
   $(id).textContent=label+': '+(experience[key]?'вкл':'выкл');$(id).setAttribute('aria-pressed',String(experience[key]));
  }
@@ -66,8 +67,9 @@ const badges=[
 const motifNames={rook:'Ладья и король',queen:'Ферзь и король',bishop:'Помощь слона',knight:'Помощь коня','queen-pawn':'Ферзь и пешка'};
 function pick(){const pool=progress?.solved.length>=10?PUZZLES:PUZZLES.filter(p=>['rook','queen'].includes(p.motif));return choosePuzzles(pool,progress?.solved||[]);}
 function current(){return state.puzzles[state.index];}
-function scrollGame(){if(window.matchMedia('(max-width:680px)').matches)document.querySelector('.game-layout').scrollIntoView({block:'start',behavior:'instant'});}
-function active(){return !busy&&mode!=='ready'&&state.phase==='playing'&&!paused&&!$('modal').open;}
+function scrollGame(){}
+function overlayOpen(){return $('modal').open||!$('main-menu').hidden;}
+function active(){return !busy&&mode!=='ready'&&state.phase==='playing'&&!paused&&!overlayOpen();}
 function toast(text){$('toast').textContent=text;$('toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').hidden=true,3000);}
 function settle(){if(mode!=='play'||state.training)return;progress=recordResult(progress,roundId,state.score,state.answers);lastSaveSucceeded=saveProgress(scopedStorage,progress);if(!lastSaveSucceeded)toast('Игра работает, но браузер не сохраняет награды.');queueScore();void flushScores();}
 function newRound(training=false){
@@ -115,7 +117,7 @@ function render(){
  document.body.dataset.phase=mode==='lesson'?'lesson':state.phase;
  renderBoard();renderBadges();
  const lesson=mode==='lesson',p=current(),feedback=state.feedback;
- $('player-button').textContent='Игрок: '+(session?.player.name||'Гость');
+ $('player-button').textContent=(session?.player.name||'Гость');$('player-button').title='Сменить игрока: '+(session?.player.name||'Гость');
  $('total-stars').textContent=session?session.player.stars:progress.stars;
  $('round-score').textContent=state.score;
  $('board-label').textContent=paused?'Пауза':state.phase==='review'&&feedback?.kind==='mate'?'Мат!':defenseShown?'Защита короля':'Ход белых';
@@ -167,7 +169,7 @@ function render(){
  $('primary-button').innerHTML=button+' '+icon('arrow');$('mission-note').textContent=note;
  $('defense-button').textContent=defenseShown?'Снова показать шах':'Показать защиту короля';
  $('board-caption').textContent=paused?'Отдыхаем. Время остановлено.':selected?'Теперь выбери клетку с точкой':state.phase==='review'?'Посмотри, как фигуры помогли друг другу':state.phase==='feedback'?'Нажми «Попробовать ещё», чтобы вернуть позицию':'Нажми на фигуру, затем на клетку';
- if(state.phase==='finished'&&mode==='play'&&!state.training)$('player-button').textContent='Игрок: '+(session?.player.name||'Гость');
+ if(state.phase==='finished'&&mode==='play'&&!state.training)$('player-button').textContent=(session?.player.name||'Гость');
  $('total-stars').textContent=session?session.player.stars:progress.stars;
 }
 async function onSquare(square){
@@ -231,11 +233,11 @@ function hint(){
  state=useHint(state);selected=state.hints===2?current().mateMovesUci[0].slice(0,2):null;
  if(state.phase==='review')clock.pause();render();
 }
-function modal(html,rankingWindow=false){profileGate.cancel();cancelAction();$('modal').classList.toggle('ranking-modal',rankingWindow);clock.pause();$('modal-content').innerHTML=html;if(!$('modal').open)$('modal').showModal();}
+function modal(html,rankingWindow=false){if(!$('modal').open)modalReturnTarget=$('main-menu').contains(document.activeElement)?$('menu-button'):document.activeElement;closeMenu(false);if($('settings-content').parentElement===$('modal-content'))$('settings-store').append($('settings-content'));$('modal').setAttribute('aria-labelledby','modal-title');profileGate.cancel();cancelAction();$('modal').classList.toggle('ranking-modal',rankingWindow);clock.pause();$('modal-content').innerHTML=html;if(!$('modal').open)$('modal').showModal();}
 function closeModal(){profileGate.cancel();if($('player-pin'))$('player-pin').value='';$('modal').close();}
 function showHow(){modal(`<div class="modal-eyebrow">ТРИ МАЛЕНЬКИХ ШАГА</div><h2 class="modal-title" id="modal-title">Давай найдём мат!</h2><div class="modal-copy"><p><strong>1. Найди шах.</strong> Какая фигура может напасть на короля?</p><p><strong>2. Проверь выходы.</strong> Может ли король убежать, взять фигуру или закрыться?</p><p><strong>3. Если спасения нет — это мат!</strong></p><p>Точки показывают, куда ходит выбранная фигура. Подсказки не отнимают сердечки.</p></div><button class="primary-button" id="start-lesson">Попробуем вместе ${icon('arrow')}</button><p class="keyboard-note">Клавиатура: стрелки — клетка; Enter — выбрать; Esc — отменить выбор.</p>`);$('start-lesson').onclick=()=>{closeModal();startLesson();};}
 function showAlbum(){modal(`<div class="modal-eyebrow">ШАХМАТНЫЙ ИССЛЕДОВАТЕЛЬ</div><h2 class="modal-title" id="modal-title">Моя коллекция</h2><p class="modal-copy">У тебя <strong>${session?session.player.stars:progress.stars}</strong> звёзд и <strong>${progress.solved.length}</strong> разных решённых задач.</p><div class="modal-badges">${badges.map(b=>`<div class="badge-item ${progress.badges.includes(b.id)?'unlocked':''}"><span class="badge-medal">${icon(b.icon)}</span><span><strong>${b.name}</strong><br>${progress.badges.includes(b.id)?'Награда твоя!':b.description}</span></div>`).join('')}</div><p class="modal-copy">Награды остаются с тобой, даже если пропустить день. В общий рейтинг идут новые раунды после входа. Значки и список решённых задач хранятся на этом устройстве.</p>`);}
-function showParents(){modal(`<div class="modal-eyebrow">СПОКОЙНОЕ ОБУЧЕНИЕ</div><h2 class="modal-title" id="modal-title">Взрослым об игре</h2><div class="modal-copy"><p>Для детей, которые уже знают ходы фигур. Сначала пройдите три примера в разделе «Как играть». При необходимости прочитайте короткие объяснения ребёнку.</p><p>Раунд: 5 задач и 3 общие попытки. Невозможный ход не штрафуется. Скорость даёт только небольшой бонус — ограничения времени нет. В тренировке сердечки и очки не расходуются.</p><p>200 проверенных позиций, преимущественно варианты простых матов ладьёй и ферзём. Проверка работает в браузере. Аккаунтов, рекламы и покупок нет.</p><p>Награды сохраняются после завершения раунда в этом браузере. Незавершённый раунд после закрытия страницы начнётся заново. Очистка браузера удалит награды. Синхронизации между устройствами пока нет.</p><p>Следите за тем, понимает ли ребёнок, почему король не может спастись. Один спокойный раунд лучше гонки за звёздами.</p></div>`);}
+function showParents(){modal(`<div class="modal-eyebrow">СПОКОЙНОЕ ОБУЧЕНИЕ</div><h2 class="modal-title" id="modal-title">Взрослым об игре</h2><div class="modal-copy"><p>Для детей, которые уже знают ходы фигур. Сначала пройдите три примера в разделе «Правила». При необходимости прочитайте короткие объяснения ребёнку.</p><p>Раунд: 5 задач и 3 общие попытки. Невозможный ход не штрафуется. Скорость даёт только небольшой бонус — ограничения времени нет. В тренировке сердечки и очки не расходуются.</p><p>200 проверенных позиций, преимущественно варианты простых матов ладьёй и ферзём. Проверка работает в браузере. Рекламы и покупок нет. Можно играть гостем или создать игрока с именем и PIN для общего рейтинга.</p><p>После входа звёзды за завершённые раунды сохраняются на сервере и доступны на других устройствах по тому же имени и PIN. Гостевые награды, значки и список решённых задач хранятся в браузере. Незавершённый раунд после закрытия страницы начнётся заново.</p><p>Следите за тем, понимает ли ребёнок, почему король не может спастись. Один спокойный раунд лучше гонки за звёздами.</p></div>`);}
 
 function showPlayer(){
  modal(`<h2 id="modal-title" class="modal-title">Кто играет?</h2><p class="modal-copy">Гость играет без регистрации. Для общего рейтинга создай имя и PIN из 6 цифр. Имя будет видно другим игрокам.</p><p id="current-player" class="modal-copy"></p><form id="player-form"><label class="profile-label">Имя или никнейм<input id="player-name" name="name" minlength="2" maxlength="24" autocomplete="username" required></label><label class="profile-label">PIN — 6 цифр<input id="player-pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="off" required></label><div class="profile-actions"><button class="primary-button" type="submit" name="action" value="login">Войти</button><button class="secondary-button" type="submit" name="action" value="create">Создать игрока</button></div><p id="profile-status" class="modal-copy" role="status"></p></form><button id="guest-player" class="secondary-button">Играть гостем</button><p class="keyboard-note">Старые гостевые награды остаются на этом устройстве. PIN нигде не показывается в рейтинге.</p>`);
@@ -265,6 +267,15 @@ async function showRanking(){
   $('ranking-status').textContent=result.players.length?'Накопленные звёзды игроков':'Здесь появится первый игрок!';
  }catch(error){if($('ranking-status'))$('ranking-status').textContent=error.message;}
 }
+function showSettings(){modal('');$('modal-content').append($('settings-content'));$('modal').setAttribute('aria-labelledby','settings-title');}
+function closeMenu(restoreFocus=false){if($('main-menu').hidden)return;$('main-menu').hidden=true;$('menu-button').setAttribute('aria-expanded','false');if(restoreFocus)$('menu-button').focus({preventScroll:true});if(canResumeClock({mode,phase:state.phase,paused,modalOpen:overlayOpen(),hidden:document.hidden}))clock.start();}
+$('menu-button').onclick=()=>{if(!$('main-menu').hidden){closeMenu(true);return;}$('main-menu').hidden=false;$('menu-button').setAttribute('aria-expanded','true');cancelAction();clock.pause();$('settings-button').focus({preventScroll:true});};
+$('menu-button').onkeydown=event=>{if(event.key==='ArrowDown'){event.preventDefault();if($('main-menu').hidden)$('menu-button').click();else $('settings-button').focus();}};
+$('main-menu').onkeydown=event=>{const buttons=[...$('main-menu').querySelectorAll('button')];let index=buttons.indexOf(document.activeElement);if(event.key==='ArrowDown'||event.key==='ArrowUp'){event.preventDefault();buttons[(index+(event.key==='ArrowDown'?1:buttons.length-1))%buttons.length].focus();}};
+document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!$('main-menu').hidden){event.preventDefault();closeMenu(true);}});
+document.addEventListener('pointerdown',event=>{if(!$('main-menu').contains(event.target)&&!$('menu-button').contains(event.target))closeMenu(false);});
+$('main-menu').addEventListener('focusout',event=>{if(event.relatedTarget&&!$('main-menu').contains(event.relatedTarget)&&event.relatedTarget!==$('menu-button'))closeMenu(false);});
+$('settings-button').onclick=showSettings;
 $('player-button').onclick=showPlayer;$('ranking-button').onclick=showRanking;
 $('view-button').onclick=()=>{cancelAction();experience.detailed=!experience.detailed;applyExperience();if(!saveExperience(storage,experience))toast('Вид экрана изменён только на этот сеанс.');};
 $('sound-button').onclick=()=>{experience.sound=!experience.sound;if(experience.sound)tone('select');else sounds.mute();applyExperience();if(!saveExperience(storage,experience))toast('Настройка звука изменена только на этот сеанс.');};
@@ -282,9 +293,9 @@ $('board').addEventListener('keydown',event=>{
 $('primary-button').onclick=primary;$('hint-button').onclick=hint;$('how-button').onclick=showHow;$('album-button').onclick=showAlbum;$('parent-button').onclick=showParents;$('close-modal').onclick=closeModal;
 $('mobile-start').onclick=startReady;
 $('modal').addEventListener('click',event=>{if(event.target===$('modal')){const r=$('modal').getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)closeModal();}});
-$('modal').addEventListener('close',()=>{profileGate.cancel();if($('player-pin'))$('player-pin').value='';if(active()&&mode==='play'&&!document.hidden)clock.start();});
+$('modal').addEventListener('close',()=>{if(modalReturnTarget?.isConnected&&modalReturnTarget.getClientRects().length)modalReturnTarget.focus({preventScroll:true});profileGate.cancel();if($('player-pin'))$('player-pin').value='';if(active()&&mode==='play'&&!document.hidden)clock.start();});
 $('pause-button').onclick=()=>{cancelAction();paused=!paused;if(paused)clock.pause();else if(state.phase==='playing'&&mode==='play')clock.start();render();};
-$('training-button').onclick=()=>newRound(true);
+$('training-button').onclick=()=>{closeModal();newRound(true);};
 $('defense-button').onclick=()=>{
  cancelAction();
  solutionView=null;defenseShown=!defenseShown;render();
@@ -292,3 +303,5 @@ $('defense-button').onclick=()=>{
 $('solution-button').onclick=()=>{const p=current(),r=evaluateMove(p.fen,p.mateMovesUci[0]);solutionView=r;defenseShown=false;renderBoard();modal(`<div class="modal-eyebrow">РАЗБИРАЕМСЯ ВМЕСТЕ</div><h2 class="modal-title" id="modal-title">Посмотри на решение</h2><p class="modal-copy">${p.explanation}</p><p class="modal-copy">Ход: <strong>${r.move.from} → ${r.move.to}</strong>. После закрытия окна на доске останется матовая позиция.</p>`);};
 document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAction();clock.pause();sounds.mute();}else if(active()&&mode==='play')clock.start();});
 render();
+
+fitGameBoard(document);

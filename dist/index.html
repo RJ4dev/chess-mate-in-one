@@ -10,14 +10,15 @@
  <div class="page-shell">
   <header class="topbar">
    <a class="brand" href="./" aria-label="Мат за один — главная"><span class="brand-mark" id="brand-mark"></span><span>мат за один<span class="brand-bang">!</span><small>маленькие шахматные приключения</small></span></a>
-   <nav class="top-actions" aria-label="Настройки и достижения">
-    <button class="setting-button" id="player-button">Игрок: Гость</button>
-    <button class="setting-button" id="ranking-button">Рейтинг</button>
-    <button class="setting-button" id="view-button" aria-pressed="false" title="Переключить подробность экрана">Подробнее</button>
-    <button class="setting-button" id="sound-button" aria-pressed="false" title="Включить или выключить звуки">Звук: выкл</button>
-    <button class="setting-button" id="effects-button" aria-pressed="true" title="Включить или выключить эффекты">Эффекты: вкл</button>
-    <button class="plain-button" id="how-button" aria-label="Как играть"><span data-icon="book"></span><span>Как играть</span></button>
-    <button class="collection-button" id="album-button" aria-label="Открыть мои награды"><span data-icon="star"></span><strong id="total-stars">0</strong><span class="collection-word">моя коллекция</span></button>
+   <nav class="top-actions" aria-label="Игрок и меню">
+    <button class="collection-button" id="album-button" aria-label="Открыть мои награды"><span data-icon="star"></span><strong id="total-stars">0</strong></button>
+    <button class="setting-button player-name" id="player-button">Гость</button>
+    <button class="menu-toggle icon-button" id="menu-button" aria-label="Меню" aria-expanded="false" aria-controls="main-menu"><span class="hamburger" aria-hidden="true"><i></i><i></i><i></i></span></button>
+    <div id="main-menu" class="dropdown-menu" hidden>
+     <button id="settings-button">Настройки</button>
+     <button id="how-button">Правила</button>
+     <button id="ranking-button">Рейтинг</button>
+    </div>
    </nav>
   </header>
 
@@ -49,14 +50,24 @@
      </section>
      <button class="hint-button" id="hint-button"><span class="hint-bulb" data-icon="bulb"></span><span><strong>Нужна подсказка?</strong><small>Подумаем вместе</small></span><span class="hint-dots" id="hint-dots">● ○ ○</span></button>
      <div class="pocket-score"><span>Звёзды за этот раунд</span><strong><span data-icon="star"></span><span id="round-score">0</span></strong></div>
-     <button class="training-button" id="training-button">Потренироваться без сердечек <span aria-hidden="true">↗</span></button>
+
     </aside>
    </section>
 
    <section class="discovery" aria-labelledby="discovery-title"><div><div class="eyebrow">ТВОИ МАЛЕНЬКИЕ ПОБЕДЫ</div><h2 id="discovery-title">Каждый мат — новое открытие</h2></div><div class="badge-row" id="badge-row"></div></section>
-   <footer><span>Учимся в своём темпе. Ошибаться — можно.</span><button id="parent-button">Взрослым об игре</button><span class="footer-mark">Сделано для любопытных ♡</span></footer>
+   <footer><span>Учимся в своём темпе. Ошибаться — можно.</span><span class="footer-mark">Сделано для любопытных ♡</span></footer>
   </main>
  </div>
+ <div id="settings-store" hidden><section id="settings-content">
+  <h2 class="modal-title" id="settings-title">Настройки</h2>
+  <div class="settings-list">
+   <button class="setting-button" id="view-button" aria-pressed="false">Подробно: выкл</button>
+   <button class="setting-button" id="sound-button" aria-pressed="false">Звук: выкл</button>
+   <button class="setting-button" id="effects-button" aria-pressed="true">Эффекты: вкл</button>
+  </div>
+  <button class="secondary-button" id="training-button">Тренировка без сердечек</button>
+  <button class="secondary-button" id="parent-button">Взрослым об игре</button>
+ </section></div>
  <dialog id="modal" aria-labelledby="modal-title"><button class="modal-close icon-button" id="close-modal" aria-label="Закрыть"><span data-icon="close"></span></button><div id="modal-content"></div></dialog>
  <div id="celebration" aria-hidden="true"></div>
  <div class="toast" id="toast" role="status" hidden></div>
