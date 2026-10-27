@@ -95,3 +95,7 @@ Review `systemctl status mate-ranking` and `journalctl -u mate-ranking` if start
 Run automated tests with `node --test tests/backend.test.mjs` or the complete repo suite with `npm test`. Proxy/systemd examples still require validation on the actual VPS; they are not exercised by Node's integration tests.
 
 Reference documentation: [Node crypto](https://nodejs.org/api/crypto.html), [nginx proxy headers](https://nginx.org/en/docs/http/ngx_http_proxy_module.html), [nginx request limiting](https://nginx.org/en/docs/http/ngx_http_limit_req_module.html).
+
+## Optional learning SQLite (0.3)
+
+Set `LEARNING_FILE` to a separate absolute private path outside the repository, on the reviewed Node24 runtime. Existing account/PIN/star JSON is not migrated. GET `/capabilities` advertises whether learning is enabled. GET `/learning` and POST `/learning/events` require the same Bearer sessions; learning never changes ranking stars. See `ops/LEARNING.md` for the exact bounded protocol, capability-gated client sync, backup/upgrade procedure and live verification limits. Use the dedicated updater for the existing Funnel VPS; the older fresh-install and generic nginx examples above are not upgrade instructions for it.

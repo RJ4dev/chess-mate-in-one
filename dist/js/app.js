@@ -11,13 +11,17 @@ import {RANKING_API} from './config.js';
 import {createRankingClient,playerStorage,readSession,createRequestGate} from './ranking-client.js';
 import {fitGameBoard} from './viewport.js';
 import {loadExperience,saveExperience,createSounds} from './experience.js';
+import {createLearningUI} from './learning-ui.js';
+import {LESSONS,WORLDS,lessonById} from './curriculum.js';
+import {createLearningStore} from './learning-progress.js';
+import {createLearningSync} from './learning-sync.js';
 
 const $=id=>document.getElementById(id);
 let storage;try{storage=window.localStorage;}catch{storage=null;}
 const experience=loadExperience(storage),sounds=createSounds();
 let effectTimer,busy=false,actionEpoch=0,defenseTimer,modalReturnTarget;
 const animations=createAnimations({enabled:()=>experience.effects,reduced:()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches});
-function cancelAction(){actionEpoch++;busy=false;clearTimeout(defenseTimer);animations.cancel();document.querySelector('.pocket-score')?.classList.remove('score-target');if(typeof state!=='undefined')$('round-score').textContent=String(state.score);if(typeof mode!=='undefined'&&canResumeClock({mode,phase:state.phase,paused,modalOpen:overlayOpen(),hidden:document.hidden}))clock.start();}
+function cancelAction(){actionEpoch++;busy=false;clearTimeout(defenseTimer);animations.cancel();learning.cancel();document.querySelector('.pocket-score')?.classList.remove('score-target');if(typeof state!=='undefined')$('round-score').textContent=String(state.score);if(typeof mode!=='undefined'&&canResumeClock({mode,phase:state.phase,paused,modalOpen:overlayOpen(),hidden:document.hidden}))clock.start();}
 const profileGate=createRequestGate();
 let session=readSession(storage);
 let scopedStorage=playerStorage(storage,session?.player.id);
@@ -54,6 +58,48 @@ function effect(kind){
 let progress=loadProgress(scopedStorage),mode='ready',lessonIndex=-1,selected=null,focusSquare='a1',paused=false,defenseShown=false;
 let roundId=createRoundId(),state=createRound(pick()),toastTimer,lastSaveSucceeded=true,solutionView=null;
 const clock=new ActiveClock();
+const learningStores=new Map();
+function learningStore(){const id=session?.player.id||'';if(!learningStores.has(id))learningStores.set(id,createLearningStore(scopedStorage));return learningStores.get(id);}
+let learningSync;
+const learning=createLearningUI({doc:document,store:learningStore,animations,blocked:()=>mode!=='learn'||overlayOpen()||document.hidden,paused:()=>paused,toast,tone,home:()=>showHome(),onProgress:()=>{void learningSync?.run();}});
+learningSync=createLearningSync({getSession:()=>session,getStore:learningStore,client:ranking,onChange:()=>updateLearningStatus(),onMerged:()=>{learning.refreshProgress();if(mode==='home')renderHome();}});
+let homeView='modes';
+const originalModeCards=$('mode-cards').innerHTML;
+function updateProfile(){
+ $('player-button').textContent=session?.player.name||'Гость';$('player-button').title='Сменить игрока: '+(session?.player.name||'Гость');
+ $('total-stars').textContent=session?session.player.stars:progress.stars;
+}
+function showHome(view='modes'){
+ cancelAction();clock.pause();if(mode==='play'&&state.answers.length)settle();
+ closeMenu(false);if($('modal').open)closeModal();
+ mode='home';homeView=view;paused=false;document.body.classList.add('is-home');document.body.classList.remove('is-learning');$('mode-home').hidden=false;
+ renderHome();updateProfile();$('mode-title').focus({preventScroll:true});
+}
+function renderHome(){
+ const p=learningStore().get(),cards=$('mode-cards');
+ $('mode-title').textContent=homeView==='quest'?'Карта приключения':homeView==='lessons'?'Учимся шахматам':homeView==='practice'?'Выбери мини-игру':'Во что сыграем?';
+ $('home-copy').textContent=homeView==='lessons'?'Первые уроки для тех, кто уже знаком с ходами фигур':homeView==='quest'?'Любую главу можно повторить':'Короткие задания без спешки';
+ $('home-back').hidden=homeView==='modes';
+ $('continue-learning').hidden=!p.resume||homeView==='practice';
+ if(p.resume)$('continue-learning').textContent='Продолжить: '+lessonById(p.resume.lessonId,p.resume.seed).title;
+ updateLearningStatus();
+ if(homeView==='modes'){
+  cards.innerHTML=originalModeCards;
+  $('choose-learning').onclick=()=>showHome('lessons');$('choose-quest').onclick=()=>showHome('quest');$('choose-mate').onclick=()=>{leaveHome();newRound();};$('choose-practice').onclick=()=>showHome('practice');
+ }else if(homeView==='practice'){
+  cards.innerHTML=[['mini-check','Найди шах','Напади на короля любым правильным ходом','♜'],['mini-save','Спаси короля','Уйди, возьми нападающего или закрой линию','♔']].map(([id,title,text,symbol])=>`<button class="mode-card" data-lesson="${id}"><span class="mode-symbol" aria-hidden="true">${symbol}</span><span><strong>${title}</strong><small>${text}</small></span><span aria-hidden="true">→</span></button>`).join('');
+ }else{
+  const groups=homeView==='quest'?WORLDS:[{title:'Первые открытия',lessonIds:LESSONS.map(l=>l.id)}];
+  cards.innerHTML=groups.map(w=>`<div class="world-group"><h2>${w.title}</h2>${w.lessonIds.map(id=>{const l=lessonById(id);return `<button class="mode-card" data-lesson="${id}"><span class="mode-symbol" aria-hidden="true">${p.completed.includes(id)?'✓':'♙'}</span><span><strong>${l.title}</strong><small>${p.completed.includes(id)?'Занятие пройдено · можно повторить':'4 шага · без потери сердечек'}</small></span><span aria-hidden="true">→</span></button>`;}).join('')}</div>`).join('');
+ }
+ cards.querySelectorAll('[data-lesson]').forEach(b=>b.onclick=()=>startLearning(b.dataset.lesson));
+}
+function updateLearningStatus(){
+ $('learning-status').textContent=!learningStore().durable?'Браузер не сохраняет продолжение после закрытия страницы.':learningSync?.status==='synced'?'Учебные достижения синхронизированы. Продолжение занятия — на этом устройстве.':learningSync?.status==='syncing'?'Сверяем учебные достижения…':session?'Учебный прогресс на этом устройстве. Серверная синхронизация пока недоступна.':'Гость: учебный прогресс хранится на этом устройстве. Можно играть без регистрации.';
+}
+function leaveHome(){$('mode-home').hidden=true;document.body.classList.remove('is-home');document.body.classList.remove('is-learning');}
+function startLearning(id,resume){cancelAction();clock.pause();if(mode==='play'&&state.answers.length)settle();closeMenu(false);closeModal();leaveHome();mode='learn';paused=false;document.body.classList.add('is-learning');learning.start(id,resume);updateProfile();}
+$('home-back').onclick=()=>showHome();$('continue-learning').onclick=()=>{const resume=learningStore().get().resume;if(resume)startLearning(resume.lessonId,resume);};
 const lessons=[
  {id:'lesson-check',fen:'k7/8/2K5/8/8/8/8/1R6 w - - 0 1',mateMovesUci:['b1a1'],motif:'rook',title:'Сначала — шах',text:'Нажми на ладью b1, затем на клетку a1.',after:'Шах! Но ещё не мат.',why:'Король может уйти на b8. Посмотри на его защиту.'},
  {id:'lesson-mate',fen:'k7/2K5/8/8/8/8/8/1R6 w - - 0 1',mateMovesUci:['b1a1'],motif:'rook',title:'Теперь — мат!',text:'Наш король стал ближе. Снова передвинь ладью с b1 на a1.',after:'Получилось! Это мат.',why:'Ладья дала шах. Наш король закрыл выходы. Чёрному королю не спастись!'},
@@ -74,6 +120,7 @@ function toast(text){$('toast').textContent=text;$('toast').hidden=false;clearTi
 function settle(){if(mode!=='play'||state.training)return;progress=recordResult(progress,roundId,state.score,state.answers);lastSaveSucceeded=saveProgress(scopedStorage,progress);if(!lastSaveSucceeded)toast('Игра работает, но браузер не сохраняет награды.');queueScore();void flushScores();}
 function newRound(training=false){
  cancelAction();
+ leaveHome();
  if(mode==='play'&&state.answers.length)settle();
  void flushScores();
  lessonIndex=-1;mode='play';state=createRound(pick(),{training});roundId=createRoundId();selected=null;paused=false;defenseShown=false;solutionView=null;clock.reset();clock.start();render();scrollGame();
@@ -81,6 +128,7 @@ function newRound(training=false){
 function startReady(){mode='play';clock.reset();clock.start();render();scrollGame();}
 function startLesson(index=0){
  cancelAction();
+ leaveHome();
  if(mode==='play'&&state.answers.length)settle();
  lessonIndex=index;mode='lesson';state=createRound([lessons[index]],{training:true});selected=null;paused=false;defenseShown=false;solutionView=null;clock.reset();render();scrollGame();
 }
@@ -113,6 +161,10 @@ function renderBadges(){
  $('badge-row').innerHTML=list;
 }
 function render(){
+ updateProfile();
+ if(mode==='home'){renderHome();return;}
+ if(mode==='learn'){learning.render();return;}
+ $('training-button').hidden=mode==='lesson';$('solution-button').textContent='Посмотреть решение';$('primary-button').disabled=false;
  document.body.classList.toggle('is-ready',mode==='ready');
  document.body.dataset.phase=mode==='lesson'?'lesson':state.phase;
  renderBoard();renderBadges();
@@ -173,6 +225,7 @@ function render(){
  $('total-stars').textContent=session?session.player.stars:progress.stars;
 }
 async function onSquare(square){
+ if(mode==='learn'){await learning.square(square);return;}
  if(mode==='ready')startReady();
  if(!active())return;
  const chess=new Chess(current().fen),piece=chess.get(square);focusSquare=square;
@@ -209,6 +262,7 @@ async function onSquare(square){
 }
 
 function primary(){
+ if(mode==='learn'){if(paused){paused=false;render();}else learning.primary();return;}
  if(busy)return;cancelAction();
  if(paused){paused=false;if(state.phase==='playing'&&mode==='play')clock.start();render();return;}
  if(mode==='ready'){startReady();return;}
@@ -226,6 +280,7 @@ function primary(){
  if(state.phase==='finished')newRound();
 }
 function hint(){
+ if(mode==='learn'){learning.hint();return;}
  if(busy)return;cancelAction();tone('hint');
  if(mode==='ready')startReady();
  if(!active())return;
@@ -254,11 +309,12 @@ function showPlayer(){
 }
 function switchPlayer(value){
  profileGate.cancel();
+ learningSync.cancel();
  if(mode==='play'&&state.answers.length)settle();
  cancelAction();clock.pause();session=value;
  try{if(value)storage?.setItem('mate-player-session',JSON.stringify(value));else storage?.removeItem('mate-player-session');}catch{toast('Вход сохранится только до закрытия страницы.');}
  scopedStorage=playerStorage(storage,session?.player.id);progress=loadProgress(scopedStorage);mode='ready';state=createRound(pick());roundId=createRoundId();selected=null;defenseShown=false;solutionView=null;paused=false;
- closeModal();render();void flushScores();
+ learning.reset();closeModal();showHome();void flushScores();void learningSync.run();
 }
 async function showRanking(){
  modal('<h2 id="modal-title" class="modal-title">Рейтинг игроков</h2><p id="ranking-status" class="modal-copy" role="status">Загружаем звёзды…</p><ol id="ranking-list" class="ranking-list"></ol>',true);
@@ -276,6 +332,8 @@ document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!$('main-me
 document.addEventListener('pointerdown',event=>{if(!$('main-menu').contains(event.target)&&!$('menu-button').contains(event.target))closeMenu(false);});
 $('main-menu').addEventListener('focusout',event=>{if(event.relatedTarget&&!$('main-menu').contains(event.relatedTarget)&&event.relatedTarget!==$('menu-button'))closeMenu(false);});
 $('settings-button').onclick=showSettings;
+$('modes-button').onclick=()=>showHome();
+document.querySelector('.brand').onclick=event=>{event.preventDefault();showHome();};
 $('player-button').onclick=showPlayer;$('ranking-button').onclick=showRanking;
 $('view-button').onclick=()=>{cancelAction();experience.detailed=!experience.detailed;applyExperience();if(!saveExperience(storage,experience))toast('Вид экрана изменён только на этот сеанс.');};
 $('sound-button').onclick=()=>{experience.sound=!experience.sound;if(experience.sound)tone('select');else sounds.mute();applyExperience();if(!saveExperience(storage,experience))toast('Настройка звука изменена только на этот сеанс.');};
@@ -286,7 +344,7 @@ $('brand-mark').innerHTML=pieceSvg('n','w');$('stamp-piece').innerHTML=pieceSvg(
 $('board').addEventListener('click',event=>{const square=event.target.closest('[data-square]')?.dataset.square;if(square)onSquare(square);});
 $('board').addEventListener('keydown',event=>{
  const sq=event.target.closest('[data-square]')?.dataset.square;if(!sq)return;
- if(event.key==='Escape'){selected=null;render();return;}
+ if(event.key==='Escape'){if(mode==='learn')learning.clearSelection();else{selected=null;render();}return;}
  const delta={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,1],ArrowDown:[0,-1]}[event.key];
  if(delta){event.preventDefault();const file=Math.max(0,Math.min(7,sq.charCodeAt(0)-97+delta[0])),rank=Math.max(1,Math.min(8,+sq[1]+delta[1]));focusSquare=String.fromCharCode(97+file)+rank;const target=$('board').querySelector(`[data-square="${focusSquare}"]`);$('board').querySelectorAll('button').forEach(b=>b.tabIndex=-1);target.tabIndex=0;target.focus();}
 });
@@ -300,8 +358,9 @@ $('defense-button').onclick=()=>{
  cancelAction();
  solutionView=null;defenseShown=!defenseShown;render();
 };
-$('solution-button').onclick=()=>{const p=current(),r=evaluateMove(p.fen,p.mateMovesUci[0]);solutionView=r;defenseShown=false;renderBoard();modal(`<div class="modal-eyebrow">РАЗБИРАЕМСЯ ВМЕСТЕ</div><h2 class="modal-title" id="modal-title">Посмотри на решение</h2><p class="modal-copy">${p.explanation}</p><p class="modal-copy">Ход: <strong>${r.move.from} → ${r.move.to}</strong>. После закрытия окна на доске останется матовая позиция.</p>`);};
+$('solution-button').onclick=()=>{if(mode==='learn'){learning.showSolution();return;}const p=current(),r=evaluateMove(p.fen,p.mateMovesUci[0]);solutionView=r;defenseShown=false;renderBoard();modal(`<div class="modal-eyebrow">РАЗБИРАЕМСЯ ВМЕСТЕ</div><h2 class="modal-title" id="modal-title">Посмотри на решение</h2><p class="modal-copy">${p.explanation}</p><p class="modal-copy">Ход: <strong>${r.move.from} → ${r.move.to}</strong>. После закрытия окна на доске останется матовая позиция.</p>`);};
+window.addEventListener('online',()=>{void flushScores();void learningSync.run();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAction();clock.pause();sounds.mute();}else if(active()&&mode==='play')clock.start();});
-render();
+render();showHome();void learningSync.run();
 
 fitGameBoard(document);

@@ -268,7 +268,10 @@ def download_source(args):
         raise InstallError("invalid_source", "Backend source must be UTF-8.") from error
     # The reviewed backend is one file and imports only Node's standard library.
     modules = re.findall(r"\bfrom\s*['\"]([^'\"]+)['\"]", text)
-    if not modules or any(not module.startswith("node:") for module in modules) or re.search(r"\bimport\s*(?:\(|['\"])", text):
+    # Optional SQLite is a built-in available on the reviewed Node24 host.
+    # Keeping this import lazy preserves the existing JSON-only Node20 mode.
+    without_sqlite = re.sub(r"\bimport\(\s*['\"]node:sqlite['\"]\s*\)", "", text)
+    if not modules or any(not module.startswith("node:") for module in modules) or re.search(r"\bimport\s*(?:\(|['\"])", without_sqlite):
         raise InstallError("unsupported_source", "Expected the reviewed single-file backend with only node: imports.")
     return source
 

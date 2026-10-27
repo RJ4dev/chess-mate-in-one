@@ -267,6 +267,15 @@ class SourceAndProbeTests(unittest.TestCase):
         self.assertEqual(request.call_args.kwargs["timeout"], 20)
         self.assertIn("/" + "a" * 40 + "/backend/server.mjs", request.call_args.args[0].full_url)
 
+    def test_optional_builtin_sqlite_does_not_allow_external_or_computed_imports(self):
+        for module in ["import('other-package')", "import('https://example.com/code.js')", "import(variable)"]:
+            source = ("import http from 'node:http';\n" + module).encode()
+            args = installer.arguments(["--source-commit", "a" * 40, "--source-sha256", hashlib.sha256(source).hexdigest()])
+            with patch.object(installer.urllib.request, "urlopen", return_value=io.BytesIO(source)):
+                with self.assertRaises(installer.InstallError) as raised:
+                    installer.download_source(args)
+            self.assertEqual(raised.exception.code, "unsupported_source")
+
     def test_missing_global_ipv4_does_not_guess_nat_public_address(self):
         with patch.object(installer, "executable", return_value="/usr/sbin/ip"), patch.object(installer, "run", return_value=SimpleNamespace(stdout='[{"addr_info": [{"family":"inet","local":"10.0.0.5"}]}]')):
             with self.assertRaises(installer.InstallError) as raised:
