@@ -1,0 +1,194 @@
+{
+  "voice": "kseniya",
+  "model": "Silero v5_6_ru",
+  "source": "https://github.com/snakers4/silero-models",
+  "license": "CC BY-NC-SA 4.0",
+  "items": [
+    {
+      "id": "phrase-01",
+      "text": "Привет! Будем учиться шахматам вместе.",
+      "file": "phrase-01.mp3",
+      "sha256": "2890376fe4d3bc093d40e47e31a25437117608712fa891f6f601c2934621da30"
+    },
+    {
+      "id": "phrase-02",
+      "text": "Что такое шах",
+      "file": "phrase-02.mp3",
+      "sha256": "5d358d7c17703e542f77028876639ea5208ead89a6087a299a8dee091c8ceb19"
+    },
+    {
+      "id": "phrase-03",
+      "text": "Как защитить короля",
+      "file": "phrase-03.mp3",
+      "sha256": "462adc6ff3b854e4c4f89afb659803e94dcfd5d7a6a15dd5a970d7d904e71cf2"
+    },
+    {
+      "id": "phrase-04",
+      "text": "Почему это мат",
+      "file": "phrase-04.mp3",
+      "sha256": "2184644452dbf95c4cf4dc4275b3d0cc0b7e4f25d43b58297881b03e16f6b04b"
+    },
+    {
+      "id": "phrase-05",
+      "text": "Найди шах",
+      "file": "phrase-05.mp3",
+      "sha256": "10ba179f897e859a6fccd4cd2ce293ec991fd6b973f5f417130d9e683710ae34"
+    },
+    {
+      "id": "phrase-06",
+      "text": "Спаси короля",
+      "file": "phrase-06.mp3",
+      "sha256": "856afa083e8884126e22be04b227e77e3c89431e7a3e0b33ea7a87ec6a68bdc4"
+    },
+    {
+      "id": "phrase-07",
+      "text": "Поставь мат",
+      "file": "phrase-07.mp3",
+      "sha256": "8af2d41614bad56bf69541917ac990cc9e0db690b8a48d1ce79c27cd3fc161ac"
+    },
+    {
+      "id": "phrase-08",
+      "text": "Ты справился сам!",
+      "file": "phrase-08.mp3",
+      "sha256": "b906a65b08880e671ea89626d194de8718ea6e00c57f7936c462c6dcc1a6ad31"
+    },
+    {
+      "id": "phrase-09",
+      "text": "Разобрались вместе!",
+      "file": "phrase-09.mp3",
+      "sha256": "35cc4100638096e776a56b3b77356ca5c078a0853f1078755aa12f8f5138a16d"
+    },
+    {
+      "id": "phrase-10",
+      "text": "Попробуем ещё",
+      "file": "phrase-10.mp3",
+      "sha256": "364b6a5f0c4cbfe5c78ab3caade472076d8c7e90ea1834e69a983fc49600e595"
+    },
+    {
+      "id": "phrase-11",
+      "text": "Занятие пройдено!",
+      "file": "phrase-11.mp3",
+      "sha256": "43799c5fd4eb14a4a7ce91b36f43fc23f3b1a90fbac241ab2e0e98ba01da0ac9"
+    },
+    {
+      "id": "phrase-12",
+      "text": "Шах — это нападение на короля. Посмотрим на пример.",
+      "file": "phrase-12.mp3",
+      "sha256": "39d73fed23c6602beb5cb930f345f6472bd5be9361e8474746fd06f4aecaa140"
+    },
+    {
+      "id": "phrase-13",
+      "text": "От шаха нужно защититься. Посмотрим на один способ.",
+      "file": "phrase-13.mp3",
+      "sha256": "49bf8b433024b749d390be35e6f9a6306375f1cb4ae28046762c5cd2b85c27c5"
+    },
+    {
+      "id": "phrase-14",
+      "text": "Мат — это шах, от которого нет законной защиты.",
+      "file": "phrase-14.mp3",
+      "sha256": "e5b03ddcc3d759b821cf186daf3a7c8536eb36b25137285b29b54876b231d601"
+    },
+    {
+      "id": "phrase-15",
+      "text": "Сделай ход с шахом чужому королю.",
+      "file": "phrase-15.mp3",
+      "sha256": "2bcdbdceef637c06f3949b9fcf98a89875cc95282b37bc658793fb29949459da"
+    },
+    {
+      "id": "phrase-16",
+      "text": "Твой король под шахом. Найди любой способ спасти его.",
+      "file": "phrase-16.mp3",
+      "sha256": "9096c1b71fa594301701f8ac0885797e26a0852cb08337a53563ea2a4c385ff0"
+    },
+    {
+      "id": "phrase-17",
+      "text": "Поставь мат за один ход.",
+      "file": "phrase-17.mp3",
+      "sha256": "53e04828f133bce7f44a50943b033d48a34d1be8fdaf8a39f0e28fba37d97f61"
+    },
+    {
+      "id": "phrase-18",
+      "text": "Это шах: твоя фигура напала на короля!",
+      "file": "phrase-18.mp3",
+      "sha256": "f40524782637a8b8f8da6252ad000f5ab18031c01c965ac8b9a712ed0a80dea0"
+    },
+    {
+      "id": "phrase-19",
+      "text": "Это мат! Король под шахом, а законной защиты нет.",
+      "file": "phrase-19.mp3",
+      "sha256": "6d98fa302ee90db935dfe0301a01494e585c7adb32ca030da611d0fcdfdbcb55"
+    },
+    {
+      "id": "phrase-20",
+      "text": "Король ушёл из-под шаха!",
+      "file": "phrase-20.mp3",
+      "sha256": "021f0b0b782eee6fc554db9bb1b8055b17557cd45054b59e94b57fdae280dce1"
+    },
+    {
+      "id": "phrase-21",
+      "text": "Ты перекрыл нападение. Король в безопасности!",
+      "file": "phrase-21.mp3",
+      "sha256": "5430825bc59899519a4de4dd037335022a99285c8b1a12b493cadf7816a13ba8"
+    },
+    {
+      "id": "phrase-22",
+      "text": "Ты взял атакующую фигуру. Король в безопасности!",
+      "file": "phrase-22.mp3",
+      "sha256": "a58542efd0d760443a5cf0e097f84351a6b294c50166e665df48b892a9fa967a"
+    },
+    {
+      "id": "phrase-23",
+      "text": "Эта фигура так не ходит или наш король оказался бы под шахом. Попробуй другую клетку.",
+      "file": "phrase-23.mp3",
+      "sha256": "56e2108d4eab525541e3474596d0d8b38120bedadbbfcd1d43beae0c5de2e9db"
+    },
+    {
+      "id": "phrase-24",
+      "text": "Этот ход не спасает короля или фигура так не ходит. Короля нельзя оставлять под шахом.",
+      "file": "phrase-24.mp3",
+      "sha256": "34fe533301e2e63010e256d540e70de40a6a336a49c4aabeff22c1c003df97c4"
+    },
+    {
+      "id": "phrase-25",
+      "text": "Это пат: шаха нет и ходов нет. Для мата нужен шах.",
+      "file": "phrase-25.mp3",
+      "sha256": "ddfac018f5bfe41f97d35f031e6dc4582e20e0a6363d1fe8d0149d1a863efb59"
+    },
+    {
+      "id": "phrase-26",
+      "text": "Шах есть, но у короля ещё есть законная защита. Попробуй поставить мат.",
+      "file": "phrase-26.mp3",
+      "sha256": "0d35f64dfa63f3f0bd3a0e73ae55503b63bb59c6da72f3fb893c900deeb7ffe8"
+    },
+    {
+      "id": "phrase-27",
+      "text": "Ход законный, но шаха нет. Найди ход, который нападёт на короля.",
+      "file": "phrase-27.mp3",
+      "sha256": "3527dae4c55a3fb11719ae5012feed3a2a0f0344af15be6e6d158ef476597afb"
+    },
+    {
+      "id": "phrase-28",
+      "text": "Ты потренировался нападать на короля разными фигурами.",
+      "file": "phrase-28.mp3",
+      "sha256": "533e124225e64314ed58b70d2a1a107ded2ab312e3d02763f4e04e0dee0776ba"
+    },
+    {
+      "id": "phrase-29",
+      "text": "Ты потренировался искать защиту от шаха.",
+      "file": "phrase-29.mp3",
+      "sha256": "b7b6e8d4eaee940c52675e2931bda8615fcc571c0597dd352c114284efd3b00f"
+    },
+    {
+      "id": "phrase-30",
+      "text": "Ты увидел: для мата нужны шах и отсутствие защиты.",
+      "file": "phrase-30.mp3",
+      "sha256": "ec57e9ec443af59c6ff29afdab2740a4ebd8f7fb3a416186c8e00244e7b83df0"
+    },
+    {
+      "id": "phrase-31",
+      "text": "Ты попробовал четыре разные позиции. Можно продолжить или отдохнуть.",
+      "file": "phrase-31.mp3",
+      "sha256": "85ac800664d6edd21fb166bbc449f90fe4b46ed7c113602954b1b23996573ecb"
+    }
+  ]
+}
