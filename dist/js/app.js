@@ -333,6 +333,7 @@ document.addEventListener('pointerdown',event=>{if(!$('main-menu').contains(even
 $('main-menu').addEventListener('focusout',event=>{if(event.relatedTarget&&!$('main-menu').contains(event.relatedTarget)&&event.relatedTarget!==$('menu-button'))closeMenu(false);});
 $('settings-button').onclick=showSettings;
 $('modes-button').onclick=()=>showHome();
+$('exit-button').onclick=()=>showHome();
 document.querySelector('.brand').onclick=event=>{event.preventDefault();showHome();};
 $('player-button').onclick=showPlayer;$('ranking-button').onclick=showRanking;
 $('view-button').onclick=()=>{cancelAction();experience.detailed=!experience.detailed;applyExperience();if(!saveExperience(storage,experience))toast('Вид экрана изменён только на этот сеанс.');};
