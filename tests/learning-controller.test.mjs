@@ -4,10 +4,11 @@ import {createLearningStore,recordLearning} from '../dist/js/learning-progress.j
 
 // Only the DOM/animation boundary is a double. Assertions inspect the real
 // controller's saved progression across cancellation, restart and player changes.
-function controller(store,animations={move:async()=>{}},narrate=()=>{}){
+function controller(store,animations={move:async()=>{}},narrate=()=>{},voiceEnabled=()=>false){
  const nodes=new Map(),node=()=>({dataset:{},classList:{toggle(){}},setAttribute(){},querySelector(){return node();},replaceChildren(){},append(){},focus(){}});
  const doc={body:node(),getElementById(id){if(!nodes.has(id))nodes.set(id,node());return nodes.get(id);},createElement:node};
- return createLearningUI({doc,store,animations,blocked:()=>false,paused:()=>false,toast(){},tone(){},home(){},narrate});
+ const ui=createLearningUI({doc,store,animations,blocked:()=>false,paused:()=>false,toast(){},tone(){},home(){},narrate,voiceEnabled});
+ return Object.assign(ui,{nodes});
 }
 test('help and failed attempts stay assisted when the actual controller resumes',async()=>{
  for(const action of ['hint','wrong']){
@@ -55,4 +56,11 @@ test('learning narration follows the visible explanation after an answer',async(
  assert.ok(spoken.at(-1)?.includes('Найди шах'));
  await ui.square('a2');await ui.square('e2');
  assert.ok(spoken.at(-1)?.includes('Ты справился сам'));
+});
+
+test('repeat control appears only when lesson voice is enabled',()=>{
+ let enabled=false;const ui=controller(()=>createLearningStore(null),undefined,undefined,()=>enabled);
+ ui.start('check');assert.equal(ui.nodes.get('repeat-voice').hidden,true);
+ enabled=true;ui.render();assert.equal(ui.nodes.get('repeat-voice').hidden,false);
+ enabled=false;ui.render();assert.equal(ui.nodes.get('repeat-voice').hidden,true);
 });

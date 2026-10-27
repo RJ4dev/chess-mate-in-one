@@ -9,7 +9,7 @@ import {createRequestGate} from './ranking-client.js';
 
 // The controller owns no authentication or ranking scores. Every async answer
 // belongs to one lesson epoch, cancelled by the host before navigation/profile changes.
-export function createLearningUI({doc,store,animations,blocked,paused,toast,tone,home,onProgress=()=>{},narrate=()=>{}}){
+export function createLearningUI({doc,store,animations,blocked,paused,toast,tone,home,onProgress=()=>{},narrate=()=>{},voiceEnabled=()=>false}){
  const $=id=>doc.getElementById(id),gate=createRequestGate();
  let lessonState,progress=store().get(),selected=null,focus='a1',busy=false,seed=0,hintShown=false,storageWarned=false;
  const exercise=()=>exerciseById(lessonState.steps[Math.min(lessonState.index,lessonState.steps.length-1)].exerciseId);
@@ -39,7 +39,7 @@ export function createLearningUI({doc,store,animations,blocked,paused,toast,tone
   if(!lessonState)return;
   const s=lessonState,e=exercise(),lesson=lessonById(s.lessonId,seed),stage=s.steps[Math.min(s.index,s.steps.length-1)].stage;
   doc.body.dataset.phase=s.phase;
-  $('repeat-voice').hidden=false;
+  $('repeat-voice').hidden=!voiceEnabled();
   board();
   $('board-label').textContent=paused()?'Пауза':new Chess(e.fen).turn()==='w'?'Ход белых':'Ход чёрных';
   $('motif').textContent=lesson.title;

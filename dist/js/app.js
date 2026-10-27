@@ -63,7 +63,7 @@ const clock=new ActiveClock();
 const learningStores=new Map();
 function learningStore(){const id=session?.player.id||'';if(!learningStores.has(id))learningStores.set(id,createLearningStore(scopedStorage));return learningStores.get(id);}
 let learningSync;
-const learning=createLearningUI({doc:document,store:learningStore,animations,blocked:()=>mode!=='learn'||overlayOpen()||document.hidden,paused:()=>paused,toast,tone,home:()=>showHome(),narrate:text=>coach.say(text),onProgress:()=>{void learningSync?.run();}});
+const learning=createLearningUI({doc:document,store:learningStore,animations,blocked:()=>mode!=='learn'||overlayOpen()||document.hidden,paused:()=>paused,toast,tone,home:()=>showHome(),narrate:text=>coach.say(text),voiceEnabled:()=>coach.enabled,onProgress:()=>{void learningSync?.run();}});
 learningSync=createLearningSync({getSession:()=>session,getStore:learningStore,client:ranking,onChange:()=>updateLearningStatus(),onMerged:()=>{learning.refreshProgress();if(mode==='home')renderHome();}});
 let homeView='modes';
 const originalModeCards=$('mode-cards').innerHTML;
@@ -340,6 +340,7 @@ $('voice-button').onclick=()=>{
  $('voice-button').textContent='Голос помощника: '+(coach.enabled?'вкл':'выкл');
  $('voice-button').setAttribute('aria-pressed',String(coach.enabled));
  $('repeat-voice').disabled=!coach.enabled;
+ $('repeat-voice').hidden=mode!=='learn'||!coach.enabled;
  $('voice-status').textContent=wanted&&!coach.enabled?'Русский голос на устройстве недоступен. Текстовые пояснения остаются.':'Голос включается отдельно от звуков. Используется русский голос устройства.';
  if(coach.enabled)coach.say('Привет! Будем учиться шахматам вместе.');
 };
