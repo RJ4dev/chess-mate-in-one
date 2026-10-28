@@ -1,4 +1,5 @@
 import {learningBadges} from './learning-badges.js';
+import {createFamilyStore} from './family.js';
 import {recommendLesson} from './learning-route.js';
 import {chooseComputerMove} from './computer.js';
 import {createLocalPartyUI} from './local-party-ui.js';
@@ -68,10 +69,13 @@ let roundId=createRoundId(),state=createRound(pick()),toastTimer,lastSaveSucceed
 const clock=new ActiveClock();
 const learningStores=new Map();
 function learningStore(){const id=session?.player.id||'';if(!learningStores.has(id))learningStores.set(id,createLearningStore(scopedStorage));return learningStores.get(id);}
+let familyActive=false;
+const familyStores=new Map();
+function familyStore(){const id=session?.player.id||'';if(!familyStores.has(id))familyStores.set(id,createFamilyStore(scopedStorage));return familyStores.get(id);}
 let learningSync;
 const localParty=createLocalPartyUI({doc:document,getStorage:()=>scopedStorage,isCurrent:()=>mode==='local',blocked:()=>mode!=='local'||overlayOpen()||document.hidden,paused:()=>paused,toast});
 const computerParty=createLocalPartyUI({doc:document,getStorage:()=>scopedStorage,isCurrent:()=>mode==='computer',blocked:()=>mode!=='computer'||overlayOpen()||document.hidden,paused:()=>paused,toast,opponent:chooseComputerMove,storageKey:'mate-computer-party-v1'});
-const learning=createLearningUI({doc:document,store:learningStore,animations,blocked:()=>mode!=='learn'||overlayOpen()||document.hidden,paused:()=>paused,toast,tone,home:()=>showHome(),narrate:text=>coach.say(text),voiceEnabled:()=>coach.enabled,isCurrent:()=>mode==='learn',onProgress:()=>{void learningSync?.run();}});
+const learning=createLearningUI({doc:document,store:()=>familyActive?familyStore():learningStore(),animations,blocked:()=>mode!=='learn'||overlayOpen()||document.hidden,paused:()=>paused,toast,tone,home:()=>showHome(),narrate:text=>coach.say(text),voiceEnabled:()=>coach.enabled,isCurrent:()=>mode==='learn',collaborative:()=>familyActive,onProgress:()=>{if(!familyActive)void learningSync?.run();}});
 learningSync=createLearningSync({getSession:()=>session,getStore:learningStore,client:ranking,onChange:()=>updateLearningStatus(),onMerged:()=>{learning.refreshProgress();if(mode==='home')renderHome();}});
 let homeView='modes';
 const originalModeCards=$('mode-cards').innerHTML;
@@ -81,6 +85,7 @@ function updateProfile(){
 }
 function showHome(view='modes'){
  cancelAction();clock.pause();if(mode==='play'&&state.answers.length)settle();
+ familyActive=false;
  closeMenu(false);if($('modal').open)closeModal();
  $('repeat-voice').hidden=true;mode='home';homeView=view;paused=false;document.body.classList.add('is-home');document.body.classList.remove('is-learning');$('mode-home').hidden=false;
  renderHome();updateProfile();$('mode-title').focus({preventScroll:true});
@@ -101,6 +106,7 @@ function renderHome(){
  updateLearningStatus();
  if(homeView==='modes'){
   cards.innerHTML=originalModeCards;
+  $('choose-family').onclick=showFamily;
   $('choose-computer').onclick=()=>{cancelAction();clock.pause();closeMenu(false);closeModal();leaveHome();mode='computer';paused=false;document.body.classList.add('is-learning');computerParty.start();updateProfile();};
   $('choose-local').onclick=()=>{cancelAction();clock.pause();closeMenu(false);closeModal();leaveHome();mode='local';paused=false;document.body.classList.add('is-learning');localParty.start();updateProfile();};
   $('choose-learning').onclick=()=>showHome('lessons');$('choose-quest').onclick=()=>showHome('quest');$('choose-mate').onclick=()=>{leaveHome();newRound();};$('choose-practice').onclick=()=>showHome('practice');
@@ -116,7 +122,7 @@ function updateLearningStatus(){
  $('learning-status').textContent=!learningStore().durable?'Браузер не сохраняет продолжение после закрытия страницы.':learningSync?.status==='synced-all'?'Достижения базового курса синхронизированы. Особые ходы и продолжение урока — на этом устройстве.':learningSync?.status==='synced'?'Шах, защита и мат синхронизированы. Ходы фигур, особые ходы и продолжение — на этом устройстве.':learningSync?.status==='syncing'?'Сверяем учебные достижения…':session?'Учебный прогресс на этом устройстве. Серверная синхронизация пока недоступна.':'Гость: учебный прогресс хранится на этом устройстве. Можно играть без регистрации.';
 }
 function leaveHome(){$('mode-home').hidden=true;document.body.classList.remove('is-home');document.body.classList.remove('is-learning');}
-function startLearning(id,resume){cancelAction();clock.pause();if(mode==='play'&&state.answers.length)settle();closeMenu(false);closeModal();leaveHome();mode='learn';paused=false;document.body.classList.add('is-learning');learning.start(id,resume);updateProfile();}
+function startLearning(id,resume,shared=false){cancelAction();clock.pause();if(mode==='play'&&state.answers.length)settle();closeMenu(false);closeModal();familyActive=shared;leaveHome();mode='learn';paused=false;document.body.classList.add('is-learning');learning.start(id,resume);updateProfile();}
 $('home-back').onclick=()=>showHome();$('continue-learning').onclick=()=>{const resume=learningStore().get().resume;if(resume)startLearning(resume.lessonId,resume);};
 const lessons=[
  {id:'lesson-check',fen:'k7/8/2K5/8/8/8/8/1R6 w - - 0 1',mateMovesUci:['b1a1'],motif:'rook',title:'Сначала — шах',text:'Нажми на ладью b1, затем на клетку a1.',after:'Шах! Но ещё не мат.',why:'Король может уйти на b8. Посмотри на его защиту.'},
@@ -315,6 +321,13 @@ function hint(){
 }
 function modal(html,rankingWindow=false){if(!$('modal').open)modalReturnTarget=$('main-menu').contains(document.activeElement)?$('menu-button'):document.activeElement;closeMenu(false);if($('settings-content').parentElement===$('modal-content'))$('settings-store').append($('settings-content'));$('modal').setAttribute('aria-labelledby','modal-title');profileGate.cancel();cancelAction();$('modal').classList.toggle('ranking-modal',rankingWindow);clock.pause();$('modal-content').innerHTML=html;if(!$('modal').open)$('modal').showModal();}
 function closeModal(){profileGate.cancel();if($('player-pin'))$('player-pin').value='';$('modal').close();}
+function showFamily(){
+ const p=familyStore().get(),ids=['check','defense','mate'];
+ modal(`<div class="modal-eyebrow">ИГРАЕМ С БЛИЗКИМ</div><h2 class="modal-title" id="modal-title">Семейная глава</h2><div class="modal-copy"><p>Два участника и одно устройство. Сначала смотрим пример вместе, потом выполняем задания по очереди: участник 1, участник 2, участник 1. Договоритесь, кто начинает. Читать и помогать друг другу можно.</p><p>Пройдено семейных глав: <strong>${ids.filter(id=>p.completed.includes(id)).length} из 3</strong>. Это отдельное участие: личные уроки, значки и рейтинг не меняются. Повторять можно сколько угодно.</p><p id="family-owner"></p></div><div id="family-chapters" class="profile-actions">${ids.map(id=>`<button class="secondary-button" data-family="${id}">${lessonById(id).title}${p.completed.includes(id)?' · вместе пройдено':''}</button>`).join('')}</div>${p.resume&&ids.includes(p.resume.lessonId)?'<button class="primary-button" id="family-continue">Продолжить общую главу</button>':''}<p class="modal-copy">Семейные главы и их продолжение сохраняются только в этом браузере, отдельно для гостя и каждого вошедшего игрока. Второму участнику не нужен вход в чужой профиль. Здесь используются текстовые пояснения.</p>`);
+ $('family-owner').textContent='Сохранение для: '+(session?.player.name||'Гость')+'.';
+ $('family-chapters').querySelectorAll('[data-family]').forEach(b=>b.onclick=()=>startLearning(b.dataset.family,undefined,true));
+ if($('family-continue'))$('family-continue').onclick=()=>{const r=familyStore().get().resume;if(r&&ids.includes(r.lessonId))startLearning(r.lessonId,r,true);};
+}
 function showHow(){modal(`<div class="modal-eyebrow">ТРИ МАЛЕНЬКИХ ШАГА</div><h2 class="modal-title" id="modal-title">Давай найдём мат!</h2><div class="modal-copy"><p><strong>1. Найди шах.</strong> Какая фигура может напасть на короля?</p><p><strong>2. Проверь выходы.</strong> Может ли король убежать, взять фигуру или закрыться?</p><p><strong>3. Если спасения нет — это мат!</strong></p><p>Точки показывают, куда ходит выбранная фигура. Подсказки не отнимают сердечки.</p></div><button class="primary-button" id="start-lesson">Попробуем вместе ${icon('arrow')}</button><p class="keyboard-note">Клавиатура: стрелки — клетка; Enter — выбрать; Esc — отменить выбор.</p>`);$('start-lesson').onclick=()=>{closeModal();startLesson();};}
 function showAlbum(){const studyBadges=learningBadges(learningStore().get());modal(`<div class="modal-eyebrow">ШАХМАТНЫЙ ИССЛЕДОВАТЕЛЬ</div><h2 class="modal-title" id="modal-title">Моя коллекция</h2><p class="modal-copy">У тебя <strong>${session?session.player.stars:progress.stars}</strong> звёзд и <strong>${progress.solved.length}</strong> разных решённых задач.</p><h3>За матовые задачи</h3><div class="modal-badges">${badges.map(b=>`<div class="badge-item ${progress.badges.includes(b.id)?'unlocked':''}"><span class="badge-medal">${icon(b.icon)}</span><span><strong>${b.name}</strong><br>${progress.badges.includes(b.id)?'Награда твоя!':b.description}</span></div>`).join('')}</div><h3>За учебные занятия</h3><p class="modal-copy">Открыто <strong>${studyBadges.filter(b=>b.unlocked).length} из ${studyBadges.length}</strong>. Значки отмечают пройденные занятия. Учиться с помощью тоже можно!</p><div class="modal-badges">${studyBadges.map(b=>`<div class="badge-item ${b.unlocked?'unlocked':''}"><span class="badge-medal" aria-hidden="true">${icon(b.unlocked?'check':'star')}</span><span><strong>${b.name}</strong><br>${b.unlocked?'Значок твой! ':''}Занятия: ${b.done} из ${b.total}${b.unlocked?'':'. Пройди '+(b.total===1?'занятие':'оба занятия')+', чтобы открыть значок.'}</span></div>`).join('')}</div><p class="modal-copy">Пропуск дней ничего не отнимает. Награды за матовые задачи и список решённых задач — на этом устройстве. Учебные значки следуют за сохранённым прогрессом занятий; особые ходы пока сохраняются только здесь. Учебные значки не добавляют звёзд в рейтинг.</p>`);}
 function showParents(){modal(`<div class="modal-eyebrow">СПОКОЙНОЕ ОБУЧЕНИЕ</div><h2 class="modal-title" id="modal-title">Взрослым об игре</h2><div class="modal-copy"><p>Для детей, которые уже знают ходы фигур. Сначала пройдите три примера в разделе «Правила». При необходимости прочитайте короткие объяснения ребёнку.</p><p>Раунд: 5 задач и 3 общие попытки. Невозможный ход не штрафуется. Скорость даёт только небольшой бонус — ограничения времени нет. В тренировке сердечки и очки не расходуются.</p><p>200 проверенных позиций, преимущественно варианты простых матов ладьёй и ферзём. Проверка работает в браузере. Рекламы и покупок нет. Можно играть гостем или создать игрока с именем и PIN для общего рейтинга.</p><p>После входа звёзды за завершённые раунды сохраняются на сервере и доступны на других устройствах по тому же имени и PIN. Гостевые награды, значки и список решённых задач хранятся в браузере. Незавершённый раунд после закрытия страницы начнётся заново.</p><p>Следите за тем, понимает ли ребёнок, почему король не может спастись. Один спокойный раунд лучше гонки за звёздами.</p></div>`);}
@@ -339,7 +352,7 @@ function switchPlayer(value){
  cancelAction();clock.pause();session=value;
  try{if(value)storage?.setItem('mate-player-session',JSON.stringify(value));else storage?.removeItem('mate-player-session');}catch{toast('Вход сохранится только до закрытия страницы.');}
  scopedStorage=playerStorage(storage,session?.player.id);progress=loadProgress(scopedStorage);mode='ready';state=createRound(pick());roundId=createRoundId();selected=null;defenseShown=false;solutionView=null;paused=false;
- learning.reset();closeModal();showHome();void flushScores();void learningSync.run();
+ familyActive=false;learning.reset();closeModal();showHome();void flushScores();void learningSync.run();
 }
 async function showRanking(){
  modal('<h2 id="modal-title" class="modal-title">Рейтинг игроков</h2><p id="ranking-status" class="modal-copy" role="status">Загружаем звёзды…</p><ol id="ranking-list" class="ranking-list"></ol>',true);

@@ -4,10 +4,10 @@ import {createLearningStore,recordLearning} from '../dist/js/learning-progress.j
 
 // Only the DOM/animation boundary is a double. Assertions inspect the real
 // controller's saved progression across cancellation, restart and player changes.
-function controller(store,animations={move:async()=>{}},narrate=()=>{},voiceEnabled=()=>false,isCurrent=()=>true){
+function controller(store,animations={move:async()=>{}},narrate=()=>{},voiceEnabled=()=>false,isCurrent=()=>true,collaborative=()=>false){
  const nodes=new Map(),node=()=>({dataset:{},classList:{toggle(){}},setAttribute(){},querySelector(){return node();},replaceChildren(){this.children=[];},append(...children){this.children??=[];this.children.push(...children);},focus(){}});
  const doc={body:node(),getElementById(id){if(!nodes.has(id))nodes.set(id,node());return nodes.get(id);},createElement:node};
- const ui=createLearningUI({doc,store,animations,blocked:()=>false,paused:()=>false,toast(){},tone(){},home(){},narrate,voiceEnabled,isCurrent});
+ const ui=createLearningUI({doc,store,animations,blocked:()=>false,paused:()=>false,toast(){},tone(){},home(){},narrate,voiceEnabled,isCurrent,collaborative});
  return Object.assign(ui,{nodes});
 }
 test('help and failed attempts stay assisted when the actual controller resumes',async()=>{
@@ -21,6 +21,28 @@ test('help and failed attempts stay assisted when the actual controller resumes'
   ui.start('mini-check',store.get().resume);await ui.square('a2');await ui.square('e2');
   assert.deepEqual(store.get().achievements['check-rook-w'],{assisted:true,independent:false},action);
  }
+});
+
+test('shared controller labels turns and never praises a family answer as individual mastery',async()=>{
+ const store=createLearningStore(null),spoken=[];
+ const ui=controller(()=>store,undefined,t=>spoken.push(t),()=>true,undefined,()=>true);
+ ui.start('check',{lessonId:'check',index:1,seed:0});
+ assert.match(ui.nodes.get('mission-tag').textContent,/Участник 1/i);
+ await ui.square('a2');await ui.square('f7');
+ assert.doesNotMatch(ui.nodes.get('message').children.map(x=>x.textContent).join(' '),/сам!/);
+ assert.deepEqual(store.get().achievements['check-bishop-w'],{assisted:true,independent:false});
+ assert.equal(spoken.length,0);assert.equal(ui.textOnly,true);
+ ui.primary();assert.match(ui.nodes.get('mission-tag').textContent,/Участник 2/i);
+});
+
+test('cancelled family answer cannot write into personal progress after leaving the shared chapter',async()=>{
+ const family=createLearningStore(null),personal=createLearningStore(null);let shared=true,release;
+ const wait=new Promise(resolve=>{release=resolve;});
+ const ui=controller(()=>shared?family:personal,{move:()=>wait},undefined,undefined,undefined,()=>shared);
+ ui.start('check',{lessonId:'check',index:1});await ui.square('a2');const pending=ui.square('f7');
+ ui.cancel();shared=false;ui.reset();ui.start('defense');release();await pending;
+ assert.deepEqual(personal.get().achievements,{});assert.deepEqual(family.get().achievements,{});
+ assert.equal(personal.get().resume.lessonId,'defense');
 });
 test('remote assistance arriving before or during animation cannot become an independent answer',async()=>{
  for(const during of [false,true]){
