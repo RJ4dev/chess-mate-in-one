@@ -9,7 +9,7 @@ import {createRequestGate} from './ranking-client.js';
 
 // The controller owns no authentication or ranking scores. Every async answer
 // belongs to one lesson epoch, cancelled by the host before navigation/profile changes.
-export function createLearningUI({doc,store,animations,blocked,paused,toast,tone,home,onProgress=()=>{},narrate=()=>{},voiceEnabled=()=>false}){
+export function createLearningUI({doc,store,animations,blocked,paused,toast,tone,home,onProgress=()=>{},narrate=()=>{},voiceEnabled=()=>false,isCurrent=()=>true}){
  const $=id=>doc.getElementById(id),gate=createRequestGate();
  let promotion=null;
  let lessonState,progress=store().get(),selected=null,focus='a1',busy=false,seed=0,hintShown=false,storageWarned=false;
@@ -51,7 +51,7 @@ export function createLearningUI({doc,store,animations,blocked,paused,toast,tone
   $('mission-tag').textContent=stage==='show'?'СМОТРИМ ВМЕСТЕ':stage==='guided'?'ПРОБУЕМ ВМЕСТЕ':stage==='independent'?'ПОПРОБУЙ САМ':'ПРАКТИКУЕМСЯ';
   $('earned').hidden=true;$('defense-button').hidden=true;
   $('solution-button').hidden=!(hintShown&&s.phase==='playing');$('solution-button').textContent='Показать ход';
-  $('hint-button').disabled=!active();$('hint-dots').textContent=hintShown?'●':'○';
+  $('hint-button').hidden=false;$('hint-button').disabled=!active();$('hint-dots').textContent=hintShown?'●':'○';
   $('hint-text').hidden=!(hintShown&&s.phase==='playing');$('hint-text').textContent=e.hint||lesson.hint||(e.goal==='save'?'Можно уйти, взять нападающую фигуру или закрыть линию. Точки — законные ходы.':'Выбрана одна подходящая фигура. Найди клетку, откуда она нападёт на короля.');
   $('pause-button').disabled=s.phase==='finished';$('training-button').hidden=true;
   let title=e.taskTitle||lesson.taskTitle||(e.goal==='check'?'Найди шах':e.goal==='save'?'Спаси короля':'Поставь мат'),text=s.result?.kind==='illegal'?s.result.text:e.prompt,button='';
@@ -98,7 +98,7 @@ export function createLearningUI({doc,store,animations,blocked,paused,toast,tone
  }
  return {
   get textOnly(){return !!lessonById(lessonState?.lessonId,seed)?.textOnly;},
-  render,cancel(){gate.cancel();busy=false;if(promotion){promotion={...promotion};render(true);}},
+  render,cancel(){gate.cancel();busy=false;if(promotion&&isCurrent()){promotion={...promotion};render(true);}},
   reset(){gate.cancel();busy=false;promotion=null;lessonState=null;progress=store().get();selected=null;},
   refreshProgress(){progress=store().get();if(lessonState&&lessonState.phase!=='finished')protectSeen();},
   start(id,resume){

@@ -4,10 +4,10 @@ import {createLearningStore,recordLearning} from '../dist/js/learning-progress.j
 
 // Only the DOM/animation boundary is a double. Assertions inspect the real
 // controller's saved progression across cancellation, restart and player changes.
-function controller(store,animations={move:async()=>{}},narrate=()=>{},voiceEnabled=()=>false){
+function controller(store,animations={move:async()=>{}},narrate=()=>{},voiceEnabled=()=>false,isCurrent=()=>true){
  const nodes=new Map(),node=()=>({dataset:{},classList:{toggle(){}},setAttribute(){},querySelector(){return node();},replaceChildren(){this.children=[];},append(...children){this.children??=[];this.children.push(...children);},focus(){}});
  const doc={body:node(),getElementById(id){if(!nodes.has(id))nodes.set(id,node());return nodes.get(id);},createElement:node};
- const ui=createLearningUI({doc,store,animations,blocked:()=>false,paused:()=>false,toast(){},tone(){},home(){},narrate,voiceEnabled});
+ const ui=createLearningUI({doc,store,animations,blocked:()=>false,paused:()=>false,toast(){},tone(){},home(){},narrate,voiceEnabled,isCurrent});
  return Object.assign(ui,{nodes});
 }
 test('help and failed attempts stay assisted when the actual controller resumes',async()=>{
@@ -106,4 +106,13 @@ test('promotion choice remains usable after cancelling for menu or background',a
  ui.cancel();await old.onclick();assert.deepEqual(store.get().achievements,{});
  const current=ui.nodes.get('message').children.find(n=>n.dataset?.promotion==='r');
  await current.onclick();assert.match(ui.nodes.get('board').innerHTML,/a1, чёрная ладья/);
+});
+
+test('returning from a mode that hides hints restores lesson hint control',()=>{
+ const ui=controller(()=>createLearningStore(null));ui.nodes.set('hint-button',{hidden:true,setAttribute(){}});ui.start('check');assert.equal(ui.nodes.get('hint-button').hidden,false);
+});
+
+test('inactive lesson cancellation cannot repaint another mode after promotion',async()=>{
+ let current=true;const ui=controller(()=>createLearningStore(null),undefined,undefined,undefined,()=>current);
+ ui.start('special-promotion',{lessonId:'special-promotion',index:1});await ui.square('a2');await ui.square('a1');current=false;ui.nodes.get('board').innerHTML='local-party-board';ui.cancel();assert.equal(ui.nodes.get('board').innerHTML,'local-party-board');
 });
