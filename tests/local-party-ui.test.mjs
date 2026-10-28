@@ -30,3 +30,14 @@ test('computer calculation restarts after menu cancellation without applying old
  ui.start();play(ui,'e2e4');await Promise.resolve();blocked=true;ui.cancel();replies[0]('e7e5');for(let i=0;i<5;i++)await Promise.resolve();assert.match(nodes.get('board').innerHTML,/e7, чёрная пешка/);
  blocked=false;ui.render();await Promise.resolve();assert.equal(replies.length,2);replies[1]('e7e5');for(let i=0;i<5;i++)await Promise.resolve();assert.match(nodes.get('board').innerHTML,/e5, чёрная пешка/);
 });
+
+test('computer game restores a pending black turn and ignores the reply from the previous visit',async()=>{
+ const replies=[];const {ui,nodes}=fixture({opponent:()=>new Promise(resolve=>replies.push(resolve)),storageKey:'computer-restore'});
+ ui.start();play(ui,'e2e4');await Promise.resolve();ui.cancel();ui.start();await Promise.resolve();
+ assert.equal(replies.length,2);replies[0]('e7e5');for(let i=0;i<5;i++)await Promise.resolve();assert.match(nodes.get('board').innerHTML,/e7, чёрная пешка/);
+ replies[1]('e7e5');for(let i=0;i<5;i++)await Promise.resolve();ui.start();assert.match(nodes.get('board').innerHTML,/e4, белая пешка/);assert.match(nodes.get('board').innerHTML,/e5, чёрная пешка/);assert.equal(nodes.get('board-label').textContent,'Ход белых');
+});
+test('late computer reply after leaving cannot repaint the next mode',async()=>{
+ let resolve;const {ui,nodes,leaveMode}=fixture({opponent:()=>new Promise(r=>resolve=r),storageKey:'computer-exit'});
+ ui.start();play(ui,'e2e4');await Promise.resolve();ui.cancel();leaveMode();nodes.get('board').innerHTML='next-mode';resolve('e7e5');for(let i=0;i<5;i++)await Promise.resolve();assert.equal(nodes.get('board').innerHTML,'next-mode');
+});
