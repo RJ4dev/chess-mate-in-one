@@ -6,3 +6,10 @@ export const SPECIAL_EXERCISES=[
  ['long-w','7k/8/8/8/8/8/8/R3K3 w Q - 0 1','c1'],
  ['short-b','4k2r/8/8/8/8/8/8/K7 b k - 0 1','g8'],
 ].map(([id,fen,targetSquare])=>({id:'castling-'+id,goal:'move',familyId:'castling',skillId:'castling',positionKind:'legalChess',fen,targetSquare,requiredPiece:'k',syncGroup:'special-v1',taskTitle:'Рокируемся',introduction:CASTLING_INTRO,hint:'Выбери короля. Он сделает два шага к ладье, а ладья встанет рядом с ним.',prompt:'Сделай рокировку: передвинь короля на клетку со звёздочкой.'}));
+const promotionIntro='На последнем ряду пешка превращается в ферзя, ладью, слона или коня — на твой выбор. Королём стать нельзя. Дойди до звёздочки и выбери новую фигуру.';
+SPECIAL_EXERCISES.push(...[
+ ['quiet-w','7k/P7/8/8/8/8/8/7K w - - 0 1','a8'],
+ ['quiet-b','7k/8/8/8/8/8/p7/7K b - - 0 1','a1'],
+ ['capture-w','3r3k/2P5/8/8/8/8/8/7K w - - 0 1','d8'],
+ ['capture-b','7k/8/8/8/8/8/2p5/3R3K b - - 0 1','d1'],
+].map(([id,fen,targetSquare])=>({id:'promotion-'+id,goal:'move',familyId:'promotion',skillId:'promotion',positionKind:'legalChess',fen,targetSquare,requiredPiece:'p',syncGroup:'special-v1',taskTitle:'Новая фигура',introduction:promotionIntro,hint:'Дойди пешкой до последнего ряда. Затем выбери ферзя, ладью, слона или коня.',prompt:'Передвинь пешку на звёздочку и выбери, в кого она превратится.'})));

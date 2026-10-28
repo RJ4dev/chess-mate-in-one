@@ -40,7 +40,7 @@ export function judgeMove(exercise,value){
  }
  if(exercise.goal==='move'){
   const correct=move.to===exercise.targetSquare&&(!exercise.requiredPiece||move.piece===exercise.requiredPiece)&&(!exercise.requireCapture||!!move.captured);
-  return {correct,kind:correct?'correct':'wrong',text:correct?(/[kq]/.test(move.flags)?'Рокировка получилась! Король и ладья сделали общий ход.':move.captured?'Получилось! Ты взял чужую фигуру.':'Получилось! Фигура дошла до звёздочки.'):'Этот ход разрешён, но цель ещё не достигнута. Найди клетку со звёздочкой.',move,fenAfter:chess.fen(),uci:uci(move)};
+  return {correct,kind:correct?'correct':'wrong',text:correct?(move.promotion?'Пешка превратилась! Новая фигура: '+({q:'ферзь',r:'ладья',b:'слон',n:'конь'}[move.promotion])+'.':/[kq]/.test(move.flags)?'Рокировка получилась! Король и ладья сделали общий ход.':move.captured?'Получилось! Ты взял чужую фигуру.':'Получилось! Фигура дошла до звёздочки.'):'Этот ход разрешён, но цель ещё не достигнута. Найди клетку со звёздочкой.',move,fenAfter:chess.fen(),uci:uci(move)};
  }
  const correct=exercise.goal==='check'?chess.isCheck():exercise.goal==='save'?underCheck:chess.isCheckmate();
  const text=correct?(exercise.goal==='save'?(move.captured?'Ты взял атакующую фигуру. Король в безопасности!':move.piece==='k'?'Король ушёл из-под шаха!':'Ты перекрыл нападение. Король в безопасности!'):chess.isCheckmate()?'Это мат! Король под шахом, а законной защиты нет.':'Это шах: твоя фигура напала на короля!'):(chess.isStalemate()?'Это пат: шаха нет и ходов нет. Для мата нужен шах.':chess.isCheck()?'Шах есть, но у короля ещё есть законная защита. Попробуй поставить мат.':'Ход законный, но шаха нет. Найди ход, который нападёт на короля.');
