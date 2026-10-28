@@ -1,10 +1,22 @@
 const key='mate-in-one-experience-v1';
-const defaults=()=>({detailed:false,sound:false,effects:true});
+export const APPEARANCES=[
+ {id:'garden',name:'Сад',paper:'#f7f6ef',light:'#eaf0d6',dark:'#85a58a',frame:'#e2d7bc',green:'#4e7962',greenDark:'#355c49'},
+ {id:'sea',name:'Море',paper:'#eff5f8',light:'#e3eef6',dark:'#8aabc1',frame:'#cbdde7',green:'#3e6c86',greenDark:'#2e5064'},
+ {id:'sand',name:'Песок',paper:'#faf4e8',light:'#f5e9d1',dark:'#bea47e',frame:'#e3ccab',green:'#795b37',greenDark:'#604626'}
+];
+export const COMPANIONS=[{id:'knight',name:'Конь Искра',piece:'n'},{id:'rook',name:'Ладья Башенка',piece:'r'},{id:'pawn',name:'Пешка Лучик',piece:'p'}];
+const defaults=()=>({detailed:false,sound:false,effects:true,appearance:'garden',companion:'knight'});
+function normalize(p){
+ if(!p||!['detailed','sound','effects'].every(k=>typeof p[k]==='boolean'))return defaults();
+ return {detailed:p.detailed,sound:p.sound,effects:p.effects,
+  appearance:APPEARANCES.some(a=>a.id===p.appearance)?p.appearance:'garden',
+  companion:COMPANIONS.some(c=>c.id===p.companion)?p.companion:'knight'};
+}
 export function loadExperience(storage){
- try{const p=JSON.parse(storage?.getItem(key)||'null');if(p&&['detailed','sound','effects'].every(k=>typeof p[k]==='boolean'))return {detailed:p.detailed,sound:p.sound,effects:p.effects};}catch{}
+ try{return normalize(JSON.parse(storage?.getItem(key)||'null'));}catch{}
  return defaults();
 }
-export function saveExperience(storage,prefs){try{if(!storage)return false;storage.setItem(key,JSON.stringify(prefs));return true;}catch{return false;}}
+export function saveExperience(storage,prefs){try{if(!storage)return false;storage.setItem(key,JSON.stringify(normalize(prefs)));return true;}catch{return false;}}
 // Short synthesized sounds, created only by user interaction. No downloads.
 export function createSounds(){
  let context,master;

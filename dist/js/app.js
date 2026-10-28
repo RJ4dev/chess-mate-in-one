@@ -16,7 +16,7 @@ import {createAnimations} from './animations.js';
 import {RANKING_API} from './config.js';
 import {createRankingClient,playerStorage,readSession,createRequestGate} from './ranking-client.js';
 import {fitGameBoard} from './viewport.js';
-import {loadExperience,saveExperience,createSounds} from './experience.js';
+import {loadExperience,saveExperience,createSounds,APPEARANCES,COMPANIONS} from './experience.js';
 import {createLearningUI} from './learning-ui.js';
 import {LESSONS,WORLDS,BEGINNER_WORLDS,lessonById} from './curriculum.js';
 import {createLearningStore} from './learning-progress.js';
@@ -51,6 +51,13 @@ function queueScore(){
 function tone(kind){if(experience.sound&&!document.hidden)sounds.play(kind);}
 function applyExperience(){
  document.body.classList.toggle('simple-ui',!experience.detailed);document.body.classList.toggle('effects-off',!experience.effects);
+ const appearance=APPEARANCES.find(a=>a.id===experience.appearance),companion=COMPANIONS.find(c=>c.id===experience.companion);
+ document.body.dataset.appearance=appearance.id;
+ for(const [variable,value] of Object.entries({'--paper':appearance.paper,'--board-light':appearance.light,'--board-dark':appearance.dark,'--board-frame':appearance.frame,'--green':appearance.green,'--green-dark':appearance.greenDark}))document.body.style.setProperty(variable,value);
+ $('appearance-choice').value=appearance.id;$('companion-choice').value=companion.id;
+ $('home-companion-icon').innerHTML=pieceSvg(companion.piece,'w');$('home-companion-name').textContent=companion.name;
+ $('companion-preview').innerHTML=pieceSvg(companion.piece,'w');$('companion-preview-name').textContent=companion.name;
+ $('guide-avatar').innerHTML=pieceSvg(companion.piece,'w');
  $('view-button').textContent='Подробно: '+(experience.detailed?'вкл':'выкл');$('view-button').setAttribute('aria-pressed',String(experience.detailed));
  for(const [id,key,label] of [['sound-button','sound','Звук'],['effects-button','effects','Эффекты']]){
   $(id).textContent=label+': '+(experience[key]?'вкл':'выкл');$(id).setAttribute('aria-pressed',String(experience[key]));
@@ -400,9 +407,13 @@ $('player-button').onclick=showPlayer;$('ranking-button').onclick=showRanking;
 $('view-button').onclick=()=>{cancelAction();experience.detailed=!experience.detailed;applyExperience();if(!saveExperience(storage,experience))toast('Вид экрана изменён только на этот сеанс.');};
 $('sound-button').onclick=()=>{experience.sound=!experience.sound;if(experience.sound)tone('select');else sounds.mute();applyExperience();if(!saveExperience(storage,experience))toast('Настройка звука изменена только на этот сеанс.');};
 $('effects-button').onclick=()=>{cancelAction();experience.effects=!experience.effects;if(!experience.effects){clearTimeout(effectTimer);$('celebration').replaceChildren();document.querySelector('.board-frame').classList.remove('happy-board','try-board');}applyExperience();if(!saveExperience(storage,experience))toast('Настройка эффектов изменена только на этот сеанс.');};
+$('appearance-choice').onchange=event=>{const id=event.target.value;if(!APPEARANCES.some(a=>a.id===id))return;experience.appearance=id;applyExperience();$('appearance-status').textContent=saveExperience(storage,experience)?'Оформление сохранено в этом браузере.':'Оформление изменено только на этот сеанс.';};
+$('companion-choice').onchange=event=>{const id=event.target.value;if(!COMPANIONS.some(c=>c.id===id))return;experience.companion=id;applyExperience();$('appearance-status').textContent=saveExperience(storage,experience)?'Спутник сохранён в этом браузере. Голос помощника прежний.':'Спутник изменён только на этот сеанс.';};
+$('appearance-choice').innerHTML=APPEARANCES.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
+$('companion-choice').innerHTML=COMPANIONS.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
 applyExperience();
 document.querySelectorAll('[data-icon]').forEach(el=>el.innerHTML=icon(el.dataset.icon));
-$('brand-mark').innerHTML=pieceSvg('n','w');$('stamp-piece').innerHTML=pieceSvg('n','w');$('guide-avatar').innerHTML=pieceSvg('p','w');
+$('brand-mark').innerHTML=pieceSvg('n','w');$('stamp-piece').innerHTML=pieceSvg('n','w');
 $('board').addEventListener('click',event=>{const square=event.target.closest('[data-square]')?.dataset.square;if(square)onSquare(square);});
 $('board').addEventListener('keydown',event=>{
  const sq=event.target.closest('[data-square]')?.dataset.square;if(!sq)return;

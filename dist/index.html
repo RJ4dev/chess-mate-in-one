@@ -26,7 +26,7 @@
 
   <main>
    <section id="mode-home" class="mode-home" aria-labelledby="mode-title" hidden>
-    <div class="home-heading"><span class="eyebrow">МАЛЕНЬКИЕ ШАХМАТНЫЕ ПРИКЛЮЧЕНИЯ</span><h1 id="mode-title" tabindex="-1">Во что сыграем?</h1><p id="home-copy">Выбери своё приключение</p></div>
+    <div class="home-heading"><span class="eyebrow">МАЛЕНЬКИЕ ШАХМАТНЫЕ ПРИКЛЮЧЕНИЯ</span><h1 id="mode-title" tabindex="-1">Во что сыграем?</h1><p id="home-copy">Выбери своё приключение</p><div class="companion-line"><span id="home-companion-icon" aria-hidden="true"></span><span>Твой спутник: <strong id="home-companion-name"></strong></span></div></div>
     <div id="learning-next" class="learning-next" hidden><p class="small-label">ТВОЙ СЛЕДУЮЩИЙ ШАГ</p><button id="learning-next-button" class="secondary-button"></button><p id="learning-next-reason" class="home-note"></p></div>
     <div id="mode-cards" class="mode-cards">
      <button class="mode-card mode-learn" id="choose-learning"><span class="mode-symbol" aria-hidden="true">♙</span><span><strong>Обучение</strong><small>Ходы фигур, шах и мат</small></span><span aria-hidden="true">→</span></button>
@@ -85,6 +85,11 @@
    <label for="voice-volume">Громкость помощника</label><input id="voice-volume" type="range" min="0" max="100" value="100" step="5" aria-label="Громкость помощника">
    <p id="voice-status">Голос Ксении включается отдельно от игровых звуков.</p>
    <button class="setting-button" id="effects-button" aria-pressed="true">Эффекты: вкл</button>
+   <label for="appearance-choice">Оформление</label><select id="appearance-choice" class="cosmetic-choice"></select>
+   <label for="companion-choice">Твой спутник</label><select id="companion-choice" class="cosmetic-choice"></select>
+   <div class="companion-line"><span id="companion-preview" aria-hidden="true"></span><strong id="companion-preview-name"></strong></div>
+   <p class="keyboard-note">Все варианты доступны сразу. Звёзды не тратятся. Оформление и спутник общие для этого браузера; голос помощника не меняется.</p>
+   <p id="appearance-status" class="keyboard-note" role="status"></p>
   </div>
   <button class="secondary-button" id="training-button">Тренировка без сердечек</button>
   <button class="secondary-button" id="parent-button">Взрослым об игре</button>
