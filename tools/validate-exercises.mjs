@@ -18,9 +18,13 @@ for(const e of EXERCISES){
  const other=kings.find(p=>p.color!==turn);
  assert(!c.isAttacked(other.square,turn),`Nonmoving king already in check: ${e.id}`);
  assert.equal(c.isCheck(),e.goal==='save',`Wrong initial check status: ${e.id}`);
+ if(e.goal==='savePiece'){
+  assert.equal(e.syncGroup,'safety-v1');assert.equal(c.get(e.threatenedSquare)?.color,turn);assert.notEqual(c.get(e.threatenedSquare).type,'k');
+  assert(c.isAttacked(e.threatenedSquare,turn==='w'?'b':'w'),`No threat: ${e.id}`);
+ }
  let correct=0;
  for(const move of c.moves({verbose:true})){
-  c.move(move);const expected=e.goal==='move'?move.to===e.targetSquare&&(!e.requiredPiece||move.piece===e.requiredPiece)&&(!e.requireCapture||!!move.captured):e.goal==='save'||(e.goal==='check'?c.isCheck():c.isCheckmate());c.undo();
+  c.move(move);const expected=e.goal==='savePiece'?!c.isAttacked(move.from===e.threatenedSquare?move.to:e.threatenedSquare,c.turn()):e.goal==='move'?move.to===e.targetSquare&&(!e.requiredPiece||move.piece===e.requiredPiece)&&(!e.requireCapture||!!move.captured):e.goal==='save'||(e.goal==='check'?c.isCheck():c.isCheckmate());c.undo();
   assert.equal(judgeMove(e,uci(move)).correct,expected,`${e.id} ${uci(move)}`);if(expected)correct++;
  }
  assert(correct>0,`No solution: ${e.id}`);

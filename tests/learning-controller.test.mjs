@@ -10,6 +10,20 @@ function controller(store,animations={move:async()=>{}},narrate=()=>{},voiceEnab
  const ui=createLearningUI({doc,store,animations,blocked:()=>false,paused:()=>false,toast(){},tone(){},home(){},narrate,voiceEnabled,isCurrent,collaborative});
  return Object.assign(ui,{nodes});
 }
+test('rescue controller marks the threatened piece and preserves help through reload and profiles',async()=>{
+ const map=new Map(),storage={getItem:k=>map.get(k),setItem:(k,v)=>map.set(k,v)};
+ const a=createLearningStore(storage,'alice'),b=createLearningStore(storage,'bob');let current=a,ui=controller(()=>current);
+ ui.start('piece-safety-2',{lessonId:'piece-safety-2',index:2,seed:0});
+ assert.match(ui.nodes.get('board').innerHTML,/d3, белый ферзь, спасаемая фигура/);
+ assert.match(ui.nodes.get('board-caption').textContent,/спасти/);
+ assert.match(ui.nodes.get('message').children.map(x=>x.textContent).join(' '),/Пешка напала/);
+ ui.hint();ui.cancel();ui=controller(()=>current);ui.start('piece-safety-2',a.get().resume);
+ await ui.square('f2');await ui.square('e4');
+ assert.deepEqual(a.get().achievements['safety-queen-w'],{assisted:true,independent:false});
+ assert.equal(a.get().resume.index,3);
+ current=b;ui.reset();ui.start('piece-safety-1');assert.deepEqual(b.get().achievements,{});
+ assert.equal(a.get().resume.index,3);
+});
 test('help and failed attempts stay assisted when the actual controller resumes',async()=>{
  for(const action of ['hint','wrong']){
   const map=new Map(),storage={getItem:k=>map.get(k),setItem:(k,v)=>map.set(k,v)};

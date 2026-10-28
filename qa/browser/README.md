@@ -65,3 +65,5 @@ inside those changed keys. All reward keys and the other profiles' learning keys
 fixtures acknowledge genuine legacy events in memory. Tests require that legacy
 sync runs, the new local facts survive, and no unsupported foundation event is
 sent. These are isolated protocol checks, not production or two-device trials.
+
+Новые уроки спасения фигуры: ещё14 сценариев для двух сборок (всего48). Проверяются оба цвета, альтернативные уходы, взятие нападающего другой фигурой, ошибка/помощь/reload, реальная незавершённая анимация при смене профиля, клавиатура/пауза и capability-границы safety-v1. Прежние награды и факты защищены общей проверкой.

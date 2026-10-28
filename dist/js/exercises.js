@@ -2,6 +2,7 @@ import {Chess,uci} from './chess.js';
 import {SPECIAL_EXERCISES} from './special-exercises.js';
 import {BEGINNER_EXERCISES} from './beginner-exercises.js';
 import {BOARD_EXERCISES} from './board-exercises.js';
+import {SAFETY_EXERCISES} from './safety-exercises.js';
 
 // Rotation with colour exchange keeps the rule and introduces play as Black.
 function opposite(fen){
@@ -29,6 +30,7 @@ const seeds=[
 const prompts={check:'Сделай ход с шахом чужому королю.',save:'Твой король под шахом. Найди любой способ спасти его.',mate:'Поставь мат за один ход.'};
 const skills={check:'give-check',save:'escape-check',mate:'mate-one'};
 export const EXERCISES=seeds.flatMap(([goal,familyId,fen])=>['w','b'].map(color=>({id:`${goal}-${familyId}-${color}`,goal,familyId,skillId:skills[goal],positionKind:'legalChess',fen:color==='w'?fen:opposite(fen),prompt:prompts[goal]}))).concat(BEGINNER_EXERCISES,SPECIAL_EXERCISES,BOARD_EXERCISES);
+EXERCISES.push(...SAFETY_EXERCISES);
 export const exerciseById=id=>EXERCISES.find(e=>e.id===id);
 export function judgeSquare(exercise,value){
  if(exercise.positionKind!=='boardStudy'||exercise.goal!=='square')throw Error('Unsupported position kind');
@@ -38,11 +40,16 @@ export function judgeSquare(exercise,value){
 
 export function judgeMove(exercise,value){
  if(exercise.positionKind!=='legalChess')throw Error('Unsupported position kind');
- if(!['check','save','mate','move'].includes(exercise.goal))throw Error('Unknown exercise goal');
+ if(!['check','save','mate','move','savePiece'].includes(exercise.goal))throw Error('Unknown exercise goal');
  const chess=new Chess(exercise.fen),underCheck=chess.isCheck();
  let move;
  try{if(typeof value!=='string'||!/^([a-h][1-8]){2}[qrbn]?$/.test(value))throw Error();move=chess.move({from:value.slice(0,2),to:value.slice(2,4),promotion:value[4]||'q'});}catch{
   return {correct:false,kind:'illegal',text:underCheck?'Этот ход не спасает короля или фигура так не ходит. Короля нельзя оставлять под шахом.':'Эта фигура так не ходит или наш король оказался бы под шахом. Попробуй другую клетку.'};
+ }
+ if(exercise.goal==='savePiece'){
+  const square=move.from===exercise.threatenedSquare?move.to:exercise.threatenedSquare,piece=chess.get(square);
+  const correct=!!piece&&piece.color===move.color&&piece.type!=='k'&&!chess.isAttacked(square,chess.turn());
+  return {correct,kind:correct?'correct':'wrong',text:correct?'Получилось! Отмеченная фигура сейчас не под нападением.':'Ход разрешён, но отмеченная фигура всё ещё под нападением. Попробуй спасти её.',move,fenAfter:chess.fen(),uci:uci(move)};
  }
  if(exercise.goal==='move'){
   const correct=move.to===exercise.targetSquare&&(!exercise.requiredPiece||move.piece===exercise.requiredPiece)&&(!exercise.requireCapture||!!move.captured);

@@ -158,7 +158,7 @@ export async function foundationsAcceptance({origin, entry, scenario, login}) {
       assert.ok(network.events.every(e => !/^(orientation-|setup-)/.test(e.exerciseId)), 'Unsupported foundation events must never be uploaded');
       assert.ok((await progress(page)).completed.includes('board-orientation'));
       await page.locator('#album-button').click();
-      assert.match(await page.locator('#modal').innerText(), /ориентация доски, расстановка и особые ходы пока сохраняются только здесь/);
+      assert.match(await page.locator('#modal').innerText(), /ориентация доски, расстановка, спасение фигур и особые ходы пока сохраняются только здесь/);
     }, {...options, groups});
   }
 
