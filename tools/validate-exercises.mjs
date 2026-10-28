@@ -1,10 +1,16 @@
 import assert from 'node:assert/strict';
 import {Chess,uci} from '../dist/js/chess.js';
-import {EXERCISES,judgeMove} from '../dist/js/exercises.js';
+import {EXERCISES,judgeMove,judgeSquare} from '../dist/js/exercises.js';
 import {LESSONS,WORLDS,BEGINNER_TOPICS} from '../dist/js/curriculum.js';
 const ids=new Set();
 for(const e of EXERCISES){
  assert(!ids.has(e.id),`Duplicate ${e.id}`);ids.add(e.id);
+ if(e.positionKind==='boardStudy'){
+  assert.equal(e.goal,'square');assert.equal(e.fen,undefined);assert.equal(e.syncGroup,'board-v1');assert(e.answers.length>0);
+  for(const [sq,piece] of Object.entries(e.pieces)){assert(/^[a-h][1-8]$/.test(sq));assert(/^[prnbqkPRNBQK]$/.test(piece));}
+  for(const square of e.answers){assert(/^[a-h][1-8]$/.test(square));assert.equal(judgeSquare(e,square).correct,true);}
+  assert(e.prompt&&e.hint&&e.explanation);continue;
+ }
  assert.equal(e.positionKind,'legalChess');
  if(e.goal==='move'){assert(/^[a-h][1-8]$/.test(e.targetSquare),e.id);assert(['p','n','b','r','q','k'].includes(e.requiredPiece),e.id);assert(['beginner-v1','special-v1'].includes(e.syncGroup),e.id);}
  const c=new Chess(e.fen),turn=c.turn(),kings=c.board().flat().filter(p=>p?.type==='k');

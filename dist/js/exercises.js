@@ -1,6 +1,7 @@
 import {Chess,uci} from './chess.js';
 import {SPECIAL_EXERCISES} from './special-exercises.js';
 import {BEGINNER_EXERCISES} from './beginner-exercises.js';
+import {BOARD_EXERCISES} from './board-exercises.js';
 
 // Rotation with colour exchange keeps the rule and introduces play as Black.
 function opposite(fen){
@@ -27,8 +28,13 @@ const seeds=[
 ];
 const prompts={check:'Сделай ход с шахом чужому королю.',save:'Твой король под шахом. Найди любой способ спасти его.',mate:'Поставь мат за один ход.'};
 const skills={check:'give-check',save:'escape-check',mate:'mate-one'};
-export const EXERCISES=seeds.flatMap(([goal,familyId,fen])=>['w','b'].map(color=>({id:`${goal}-${familyId}-${color}`,goal,familyId,skillId:skills[goal],positionKind:'legalChess',fen:color==='w'?fen:opposite(fen),prompt:prompts[goal]}))).concat(BEGINNER_EXERCISES,SPECIAL_EXERCISES);
+export const EXERCISES=seeds.flatMap(([goal,familyId,fen])=>['w','b'].map(color=>({id:`${goal}-${familyId}-${color}`,goal,familyId,skillId:skills[goal],positionKind:'legalChess',fen:color==='w'?fen:opposite(fen),prompt:prompts[goal]}))).concat(BEGINNER_EXERCISES,SPECIAL_EXERCISES,BOARD_EXERCISES);
 export const exerciseById=id=>EXERCISES.find(e=>e.id===id);
+export function judgeSquare(exercise,value){
+ if(exercise.positionKind!=='boardStudy'||exercise.goal!=='square')throw Error('Unsupported position kind');
+ const valid=typeof value==='string'&&/^[a-h][1-8]$/.test(value),correct=valid&&exercise.answers.includes(value);
+ return {correct,kind:correct?'correct':valid?'wrong':'illegal',square:valid?value:null,text:correct?exercise.explanation:'Посмотри ещё раз. '+exercise.hint};
+}
 
 export function judgeMove(exercise,value){
  if(exercise.positionKind!=='legalChess')throw Error('Unsupported position kind');
@@ -47,6 +53,7 @@ export function judgeMove(exercise,value){
  return {correct,kind:correct?'correct':'wrong',text,move,fenAfter:chess.fen(),uci:uci(move)};
 }
 export function solutions(exercise){
+ if(exercise.positionKind==='boardStudy')return [...exercise.answers];
  if(exercise.positionKind!=='legalChess')throw Error('Unsupported position kind');
  return new Chess(exercise.fen).moves({verbose:true}).map(uci).filter(value=>judgeMove(exercise,value).correct).sort();
 }

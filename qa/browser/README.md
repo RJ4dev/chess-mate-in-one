@@ -48,3 +48,20 @@ xvfb-run -a npm test
 The workflow uses a read-only GitHub token and no repository secrets, has a
 timeout, uploads only fixture-based test reports, and has no deployment step.
 The root `npm test` remains independent of browser installation.
+
+## Foundation-course acceptance
+
+The PR16 matrix adds eight scenarios per entry point (34 total including the
+18 computer regressions): fresh-learner route and four corners; all 32 literal
+initial-piece locations and alternative correct squares; queen/king locations;
+mistake/help/solution and reload; two-profile isolation; legacy-only and
+beginner-capable sync without board-v1 uploads; keyboard answers during pause.
+
+Computer scenarios still require every original reward and learning value to
+remain byte-for-byte unchanged. Foundation scenarios may change only explicitly
+listed profiles' learning keys, and assert the intended facts and continuation;
+the original true facts, seen exercises and completed lessons must also survive
+inside those changed keys. All reward keys and the other profiles' learning keys remain protected. Sync
+fixtures acknowledge genuine legacy events in memory. Tests require that legacy
+sync runs, the new local facts survive, and no unsupported foundation event is
+sent. These are isolated protocol checks, not production or two-device trials.
