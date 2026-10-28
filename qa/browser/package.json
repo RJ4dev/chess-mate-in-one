@@ -1,0 +1,12 @@
+{
+  "name": "shakhmator-browser-acceptance",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node run.mjs",
+    "preflight": "node run.mjs --preflight"
+  },
+  "devDependencies": {
+    "playwright": "1.58.2"
+  }
+}
