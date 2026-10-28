@@ -1,3 +1,4 @@
+import {chooseComputerMove} from './computer.js';
 import {createLocalPartyUI} from './local-party-ui.js';
 import {Chess,evaluateMove} from './chess.js';
 import {PUZZLES} from './puzzles.js';
@@ -26,7 +27,7 @@ const appScript=[...document.querySelectorAll('script[type="module"][src]')].fin
 const coach=createCoachAudio({clips:VOICE_CLIPS,assetBase:voiceAssetBase(document.URL,appScript?.src)});
 let effectTimer,busy=false,actionEpoch=0,defenseTimer,modalReturnTarget;
 const animations=createAnimations({enabled:()=>experience.effects,reduced:()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches});
-function cancelAction(){coach.cancel();actionEpoch++;busy=false;clearTimeout(defenseTimer);animations.cancel();learning.cancel();localParty?.cancel();document.querySelector('.pocket-score')?.classList.remove('score-target');if(typeof state!=='undefined')$('round-score').textContent=String(state.score);if(typeof mode!=='undefined'&&canResumeClock({mode,phase:state.phase,paused,modalOpen:overlayOpen(),hidden:document.hidden}))clock.start();}
+function cancelAction(){coach.cancel();actionEpoch++;busy=false;clearTimeout(defenseTimer);animations.cancel();learning.cancel();localParty?.cancel();computerParty?.cancel();document.querySelector('.pocket-score')?.classList.remove('score-target');if(typeof state!=='undefined')$('round-score').textContent=String(state.score);if(typeof mode!=='undefined'&&canResumeClock({mode,phase:state.phase,paused,modalOpen:overlayOpen(),hidden:document.hidden}))clock.start();}
 const profileGate=createRequestGate();
 let session=readSession(storage);
 let scopedStorage=playerStorage(storage,session?.player.id);
@@ -67,6 +68,7 @@ const learningStores=new Map();
 function learningStore(){const id=session?.player.id||'';if(!learningStores.has(id))learningStores.set(id,createLearningStore(scopedStorage));return learningStores.get(id);}
 let learningSync;
 const localParty=createLocalPartyUI({doc:document,getStorage:()=>scopedStorage,isCurrent:()=>mode==='local',blocked:()=>mode!=='local'||overlayOpen()||document.hidden,paused:()=>paused,toast});
+const computerParty=createLocalPartyUI({doc:document,getStorage:()=>scopedStorage,isCurrent:()=>mode==='computer',blocked:()=>mode!=='computer'||overlayOpen()||document.hidden,paused:()=>paused,toast,opponent:chooseComputerMove,storageKey:'mate-computer-party-v1'});
 const learning=createLearningUI({doc:document,store:learningStore,animations,blocked:()=>mode!=='learn'||overlayOpen()||document.hidden,paused:()=>paused,toast,tone,home:()=>showHome(),narrate:text=>coach.say(text),voiceEnabled:()=>coach.enabled,isCurrent:()=>mode==='learn',onProgress:()=>{void learningSync?.run();}});
 learningSync=createLearningSync({getSession:()=>session,getStore:learningStore,client:ranking,onChange:()=>updateLearningStatus(),onMerged:()=>{learning.refreshProgress();if(mode==='home')renderHome();}});
 let homeView='modes';
@@ -92,6 +94,7 @@ function renderHome(){
  updateLearningStatus();
  if(homeView==='modes'){
   cards.innerHTML=originalModeCards;
+  $('choose-computer').onclick=()=>{cancelAction();clock.pause();closeMenu(false);closeModal();leaveHome();mode='computer';paused=false;document.body.classList.add('is-learning');computerParty.start();updateProfile();};
   $('choose-local').onclick=()=>{cancelAction();clock.pause();closeMenu(false);closeModal();leaveHome();mode='local';paused=false;document.body.classList.add('is-learning');localParty.start();updateProfile();};
   $('choose-learning').onclick=()=>showHome('lessons');$('choose-quest').onclick=()=>showHome('quest');$('choose-mate').onclick=()=>{leaveHome();newRound();};$('choose-practice').onclick=()=>showHome('practice');
  }else if(homeView==='practice'){
@@ -173,6 +176,7 @@ function render(){
  if(mode==='home'){renderHome();return;}
  if(mode==='learn'){learning.render();return;}
  if(mode==='local'){localParty.render();return;}
+ if(mode==='computer'){computerParty.render();return;}
  $('repeat-voice').hidden=true;
  $('hint-button').hidden=false;$('training-button').hidden=mode==='lesson';$('solution-button').textContent='Посмотреть решение';$('primary-button').disabled=false;
  document.body.classList.toggle('is-ready',mode==='ready');
@@ -235,6 +239,7 @@ function render(){
  $('total-stars').textContent=session?session.player.stars:progress.stars;
 }
 async function onSquare(square){
+ if(mode==='computer'){computerParty.square(square);return;}
  if(mode==='local'){localParty.square(square);return;}
  if(mode==='learn'){await learning.square(square);return;}
  if(mode==='ready')startReady();
@@ -273,6 +278,7 @@ async function onSquare(square){
 }
 
 function primary(){
+ if(mode==='computer'){computerParty.primary();return;}
  if(mode==='local'){localParty.primary();return;}
  if(mode==='learn'){if(paused){paused=false;render();}else learning.primary();return;}
  if(busy)return;cancelAction();
@@ -336,7 +342,8 @@ async function showRanking(){
  }catch(error){if($('ranking-status'))$('ranking-status').textContent=error.message;}
 }
 function showSettings(){modal('');$('modal-content').append($('settings-content'));$('modal').setAttribute('aria-labelledby','settings-title');}
-function closeMenu(restoreFocus=false){if($('main-menu').hidden)return;$('main-menu').hidden=true;$('menu-button').setAttribute('aria-expanded','false');if(restoreFocus)$('menu-button').focus({preventScroll:true});if(canResumeClock({mode,phase:state.phase,paused,modalOpen:overlayOpen(),hidden:document.hidden}))clock.start();}
+function resumeComputer(){if(mode==='computer'&&!document.hidden&&!overlayOpen()&&!paused)computerParty.render();}
+function closeMenu(restoreFocus=false){if($('main-menu').hidden)return;$('main-menu').hidden=true;$('menu-button').setAttribute('aria-expanded','false');if(restoreFocus)$('menu-button').focus({preventScroll:true});if(canResumeClock({mode,phase:state.phase,paused,modalOpen:overlayOpen(),hidden:document.hidden}))clock.start();resumeComputer();}
 $('menu-button').onclick=()=>{if(!$('main-menu').hidden){closeMenu(true);return;}$('main-menu').hidden=false;$('menu-button').setAttribute('aria-expanded','true');cancelAction();clock.pause();$('settings-button').focus({preventScroll:true});};
 $('menu-button').onkeydown=event=>{if(event.key==='ArrowDown'){event.preventDefault();if($('main-menu').hidden)$('menu-button').click();else $('settings-button').focus();}};
 $('main-menu').onkeydown=event=>{const buttons=[...$('main-menu').querySelectorAll('button')];let index=buttons.indexOf(document.activeElement);if(event.key==='ArrowDown'||event.key==='ArrowUp'){event.preventDefault();buttons[(index+(event.key==='ArrowDown'?1:buttons.length-1))%buttons.length].focus();}};
@@ -368,14 +375,14 @@ $('brand-mark').innerHTML=pieceSvg('n','w');$('stamp-piece').innerHTML=pieceSvg(
 $('board').addEventListener('click',event=>{const square=event.target.closest('[data-square]')?.dataset.square;if(square)onSquare(square);});
 $('board').addEventListener('keydown',event=>{
  const sq=event.target.closest('[data-square]')?.dataset.square;if(!sq)return;
- if(event.key==='Escape'){if(mode==='local')localParty.clearSelection();else if(mode==='learn')learning.clearSelection();else{selected=null;render();}return;}
+ if(event.key==='Escape'){if(mode==='computer')computerParty.clearSelection();else if(mode==='local')localParty.clearSelection();else if(mode==='learn')learning.clearSelection();else{selected=null;render();}return;}
  const delta={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,1],ArrowDown:[0,-1]}[event.key];
  if(delta){event.preventDefault();const file=Math.max(0,Math.min(7,sq.charCodeAt(0)-97+delta[0])),rank=Math.max(1,Math.min(8,+sq[1]+delta[1]));focusSquare=String.fromCharCode(97+file)+rank;const target=$('board').querySelector(`[data-square="${focusSquare}"]`);$('board').querySelectorAll('button').forEach(b=>b.tabIndex=-1);target.tabIndex=0;target.focus();}
 });
 $('primary-button').onclick=primary;$('hint-button').onclick=hint;$('how-button').onclick=showHow;$('album-button').onclick=showAlbum;$('parent-button').onclick=showParents;$('close-modal').onclick=closeModal;
 $('mobile-start').onclick=startReady;
 $('modal').addEventListener('click',event=>{if(event.target===$('modal')){const r=$('modal').getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)closeModal();}});
-$('modal').addEventListener('close',()=>{if(modalReturnTarget?.isConnected&&modalReturnTarget.getClientRects().length)modalReturnTarget.focus({preventScroll:true});profileGate.cancel();if($('player-pin'))$('player-pin').value='';if(active()&&mode==='play'&&!document.hidden)clock.start();});
+$('modal').addEventListener('close',()=>{if(modalReturnTarget?.isConnected&&modalReturnTarget.getClientRects().length)modalReturnTarget.focus({preventScroll:true});profileGate.cancel();if($('player-pin'))$('player-pin').value='';if(active()&&mode==='play'&&!document.hidden)clock.start();resumeComputer();});
 $('pause-button').onclick=()=>{cancelAction();paused=!paused;if(paused)clock.pause();else if(state.phase==='playing'&&mode==='play')clock.start();render();};
 $('training-button').onclick=()=>{closeModal();newRound(true);};
 $('defense-button').onclick=()=>{
@@ -384,7 +391,7 @@ $('defense-button').onclick=()=>{
 };
 $('solution-button').onclick=()=>{if(mode==='learn'){learning.showSolution();return;}const p=current(),r=evaluateMove(p.fen,p.mateMovesUci[0]);solutionView=r;defenseShown=false;renderBoard();modal(`<div class="modal-eyebrow">РАЗБИРАЕМСЯ ВМЕСТЕ</div><h2 class="modal-title" id="modal-title">Посмотри на решение</h2><p class="modal-copy">${p.explanation}</p><p class="modal-copy">Ход: <strong>${r.move.from} → ${r.move.to}</strong>. После закрытия окна на доске останется матовая позиция.</p>`);};
 window.addEventListener('online',()=>{void flushScores();void learningSync.run();});
-document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAction();clock.pause();sounds.mute();}else if(active()&&mode==='play')clock.start();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAction();clock.pause();sounds.mute();}else{if(active()&&mode==='play')clock.start();resumeComputer();}});
 render();showHome();void learningSync.run();
 
 fitGameBoard(document);

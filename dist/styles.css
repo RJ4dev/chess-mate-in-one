@@ -48,3 +48,5 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}.welcome,.discovery,
 .lesson-goal{position:absolute;right:3px;top:1px;font-size:clamp(14px,3.8vw,24px);line-height:1;color:#d59416;text-shadow:0 1px 1px #fff,0 0 3px #fff;pointer-events:none;z-index:2}
 
 .mode-home[data-view="lessons"],.mode-home[data-view="quest"]{justify-content:flex-start}
+/* Six start cards must keep their first item reachable on short phones. */
+.mode-home[data-view="modes"]{justify-content:flex-start}
