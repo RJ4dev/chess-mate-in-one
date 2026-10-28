@@ -13,3 +13,10 @@ SPECIAL_EXERCISES.push(...[
  ['capture-w','3r3k/2P5/8/8/8/8/8/7K w - - 0 1','d8'],
  ['capture-b','7k/8/8/8/8/8/2p5/3R3K b - - 0 1','d1'],
 ].map(([id,fen,targetSquare])=>({id:'promotion-'+id,goal:'move',familyId:'promotion',skillId:'promotion',positionKind:'legalChess',fen,targetSquare,requiredPiece:'p',syncGroup:'special-v1',taskTitle:'Новая фигура',introduction:promotionIntro,hint:'Дойди пешкой до последнего ряда. Затем выбери ферзя, ладью, слона или коня.',prompt:'Передвинь пешку на звёздочку и выбери, в кого она превратится.'})));
+const enPassantIntro='Если чужая пешка только что прошла две клетки и встала рядом с твоей, её можно взять на проходе. Твоя пешка идёт по диагонали на клетку, которую чужая пешка перескочила. Чужая пешка снимается с доски. Это можно сделать только сразу следующим ходом, если твой король остаётся в безопасности.';
+SPECIAL_EXERCISES.push(...[
+ ['center-w','7k/8/8/3pP3/8/8/8/7K w - d6 0 2','d6','d5'],
+ ['center-b','7k/8/8/8/3Pp3/8/8/7K b - d3 0 2','d3','d4'],
+ ['edge-w','7k/8/8/pP6/8/8/8/7K w - a6 0 2','a6','a5'],
+ ['edge-b','7k/8/8/8/Pp6/8/8/7K b - a3 0 2','a3','a4'],
+].map(([id,fen,targetSquare,capturedSquare])=>({id:'en-passant-'+id,goal:'move',familyId:'en-passant',skillId:'en-passant',positionKind:'legalChess',fen,targetSquare,capturedSquare,requiredPiece:'p',requireCapture:true,syncGroup:'special-v1',taskTitle:'Взятие на проходе',introduction:enPassantIntro,hint:'Соседняя чужая пешка только что прошла две клетки. Твоя идёт на звёздочку по диагонали, а чужая снимается.',prompt:'Чужая пешка только что прошла две клетки. Возьми её на проходе: перейди своей пешкой на звёздочку.'})));
