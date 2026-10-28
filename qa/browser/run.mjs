@@ -96,9 +96,9 @@ async function verifyLegalReply(page, key = gameKey('a')) {
   const value = await saved(page, key);
   assert.equal(value.moves.length, 2);
   const board = new Chess();
-  for (const value of value.moves) {
-    const legal = board.moves({verbose: true}).find(m => m.from + m.to + (m.promotion || '') === value);
-    assert.ok(legal, `illegal saved move: ${value}`);
+  for (const move of value.moves) {
+    const legal = board.moves({verbose: true}).find(m => m.from + m.to + (m.promotion || '') === move);
+    assert.ok(legal, `illegal saved move: ${move}`);
     board.move({from: legal.from, to: legal.to, promotion: legal.promotion});
   }
   assert.equal(board.turn(), 'w');
