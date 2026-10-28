@@ -230,6 +230,12 @@ try {
       await movesAre(page, 2); await verifyLegalReply(page);
     });
     await scenario(origin, entry, 'real hidden tab cancels pending work', async (page, context) => {
+      // Playwright normally forces each page active via focus emulation.
+      // Disable that test default so a real foreground-tab change can hide this page.
+      const session = await context.newCDPSession(page);
+      await session.send('Emulation.setFocusEmulationEnabled', {enabled: false});
+      await page.bringToFront();
+      await page.waitForFunction(() => !document.hidden, null, {polling: 50});
       await pending(page);
       const cover = await context.newPage(); await cover.bringToFront();
       await page.waitForFunction(() => document.hidden, null, {polling: 50});
