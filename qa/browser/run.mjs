@@ -123,6 +123,12 @@ async function snapshot(page) {
     stores: Object.fromEntries(Object.keys(localStorage).sort().map(k => [k, localStorage.getItem(k)]))}));
 }
 async function staleCannotChange(page) {
+  // A mode transition schedules fitGameBoard through ResizeObserver + rAF.
+  // Establish the baseline after that legitimate layout, while search is held.
+  if (!await page.evaluate(() => document.hidden)) {
+    await page.waitForFunction(() => parseFloat(document.querySelector('.board-frame').style.width) > 0);
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  }
   const before = await snapshot(page);
   await release(page);
   // After the held callback executes, allow its Promise continuations to settle.
