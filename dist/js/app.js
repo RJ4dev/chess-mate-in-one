@@ -1,3 +1,4 @@
+import {createLocalPartyUI} from './local-party-ui.js';
 import {Chess,evaluateMove} from './chess.js';
 import {PUZZLES} from './puzzles.js';
 import {createRound,submitMove,retryPuzzle,useHint,nextPuzzle,choosePuzzles,ActiveClock,createRoundId,canResumeClock} from './game.js';
@@ -25,7 +26,7 @@ const appScript=[...document.querySelectorAll('script[type="module"][src]')].fin
 const coach=createCoachAudio({clips:VOICE_CLIPS,assetBase:voiceAssetBase(document.URL,appScript?.src)});
 let effectTimer,busy=false,actionEpoch=0,defenseTimer,modalReturnTarget;
 const animations=createAnimations({enabled:()=>experience.effects,reduced:()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches});
-function cancelAction(){coach.cancel();actionEpoch++;busy=false;clearTimeout(defenseTimer);animations.cancel();learning.cancel();document.querySelector('.pocket-score')?.classList.remove('score-target');if(typeof state!=='undefined')$('round-score').textContent=String(state.score);if(typeof mode!=='undefined'&&canResumeClock({mode,phase:state.phase,paused,modalOpen:overlayOpen(),hidden:document.hidden}))clock.start();}
+function cancelAction(){coach.cancel();actionEpoch++;busy=false;clearTimeout(defenseTimer);animations.cancel();learning.cancel();localParty?.cancel();document.querySelector('.pocket-score')?.classList.remove('score-target');if(typeof state!=='undefined')$('round-score').textContent=String(state.score);if(typeof mode!=='undefined'&&canResumeClock({mode,phase:state.phase,paused,modalOpen:overlayOpen(),hidden:document.hidden}))clock.start();}
 const profileGate=createRequestGate();
 let session=readSession(storage);
 let scopedStorage=playerStorage(storage,session?.player.id);
@@ -65,7 +66,8 @@ const clock=new ActiveClock();
 const learningStores=new Map();
 function learningStore(){const id=session?.player.id||'';if(!learningStores.has(id))learningStores.set(id,createLearningStore(scopedStorage));return learningStores.get(id);}
 let learningSync;
-const learning=createLearningUI({doc:document,store:learningStore,animations,blocked:()=>mode!=='learn'||overlayOpen()||document.hidden,paused:()=>paused,toast,tone,home:()=>showHome(),narrate:text=>coach.say(text),voiceEnabled:()=>coach.enabled,onProgress:()=>{void learningSync?.run();}});
+const localParty=createLocalPartyUI({doc:document,getStorage:()=>scopedStorage,isCurrent:()=>mode==='local',blocked:()=>mode!=='local'||overlayOpen()||document.hidden,paused:()=>paused,toast});
+const learning=createLearningUI({doc:document,store:learningStore,animations,blocked:()=>mode!=='learn'||overlayOpen()||document.hidden,paused:()=>paused,toast,tone,home:()=>showHome(),narrate:text=>coach.say(text),voiceEnabled:()=>coach.enabled,isCurrent:()=>mode==='learn',onProgress:()=>{void learningSync?.run();}});
 learningSync=createLearningSync({getSession:()=>session,getStore:learningStore,client:ranking,onChange:()=>updateLearningStatus(),onMerged:()=>{learning.refreshProgress();if(mode==='home')renderHome();}});
 let homeView='modes';
 const originalModeCards=$('mode-cards').innerHTML;
@@ -90,6 +92,7 @@ function renderHome(){
  updateLearningStatus();
  if(homeView==='modes'){
   cards.innerHTML=originalModeCards;
+  $('choose-local').onclick=()=>{cancelAction();clock.pause();closeMenu(false);closeModal();leaveHome();mode='local';paused=false;document.body.classList.add('is-learning');localParty.start();updateProfile();};
   $('choose-learning').onclick=()=>showHome('lessons');$('choose-quest').onclick=()=>showHome('quest');$('choose-mate').onclick=()=>{leaveHome();newRound();};$('choose-practice').onclick=()=>showHome('practice');
  }else if(homeView==='practice'){
   cards.innerHTML=[['mini-check','Найди шах','Напади на короля любым правильным ходом','♜'],['mini-save','Спаси короля','Уйди, возьми нападающего или закрой линию','♔']].map(([id,title,text,symbol])=>`<button class="mode-card" data-lesson="${id}"><span class="mode-symbol" aria-hidden="true">${symbol}</span><span><strong>${title}</strong><small>${text}</small></span><span aria-hidden="true">→</span></button>`).join('');
@@ -169,8 +172,9 @@ function render(){
  updateProfile();
  if(mode==='home'){renderHome();return;}
  if(mode==='learn'){learning.render();return;}
+ if(mode==='local'){localParty.render();return;}
  $('repeat-voice').hidden=true;
- $('training-button').hidden=mode==='lesson';$('solution-button').textContent='Посмотреть решение';$('primary-button').disabled=false;
+ $('hint-button').hidden=false;$('training-button').hidden=mode==='lesson';$('solution-button').textContent='Посмотреть решение';$('primary-button').disabled=false;
  document.body.classList.toggle('is-ready',mode==='ready');
  document.body.dataset.phase=mode==='lesson'?'lesson':state.phase;
  renderBoard();renderBadges();
@@ -231,6 +235,7 @@ function render(){
  $('total-stars').textContent=session?session.player.stars:progress.stars;
 }
 async function onSquare(square){
+ if(mode==='local'){localParty.square(square);return;}
  if(mode==='learn'){await learning.square(square);return;}
  if(mode==='ready')startReady();
  if(!active())return;
@@ -268,6 +273,7 @@ async function onSquare(square){
 }
 
 function primary(){
+ if(mode==='local'){localParty.primary();return;}
  if(mode==='learn'){if(paused){paused=false;render();}else learning.primary();return;}
  if(busy)return;cancelAction();
  if(paused){paused=false;if(state.phase==='playing'&&mode==='play')clock.start();render();return;}
@@ -362,7 +368,7 @@ $('brand-mark').innerHTML=pieceSvg('n','w');$('stamp-piece').innerHTML=pieceSvg(
 $('board').addEventListener('click',event=>{const square=event.target.closest('[data-square]')?.dataset.square;if(square)onSquare(square);});
 $('board').addEventListener('keydown',event=>{
  const sq=event.target.closest('[data-square]')?.dataset.square;if(!sq)return;
- if(event.key==='Escape'){if(mode==='learn')learning.clearSelection();else{selected=null;render();}return;}
+ if(event.key==='Escape'){if(mode==='local')localParty.clearSelection();else if(mode==='learn')learning.clearSelection();else{selected=null;render();}return;}
  const delta={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,1],ArrowDown:[0,-1]}[event.key];
  if(delta){event.preventDefault();const file=Math.max(0,Math.min(7,sq.charCodeAt(0)-97+delta[0])),rank=Math.max(1,Math.min(8,+sq[1]+delta[1]));focusSquare=String.fromCharCode(97+file)+rank;const target=$('board').querySelector(`[data-square="${focusSquare}"]`);$('board').querySelectorAll('button').forEach(b=>b.tabIndex=-1);target.tabIndex=0;target.focus();}
 });
