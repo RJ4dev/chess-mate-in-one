@@ -15,5 +15,5 @@ test('independent final step moves forward without calling it remedial practice'
  const p={...emptyLearning(),completed:['board-orientation','board-setup','board-royals','beginner-board-1'],achievements:{'beginner-board-4':{assisted:true,independent:true}}};assert.deepEqual(recommendLesson(p),{lessonId:'beginner-board-2',kind:'next'});
 });
 test('finished catalogue offers optional review, without changing completion or hiding lessons',()=>{
- const p={...emptyLearning(),completed:LESSONS.map(l=>l.id)};const result=recommendLesson(p);assert.equal(result.kind,'review');assert.ok(LESSONS.some(l=>l.id===result.lessonId));assert.equal(p.completed.length,25);
+ const p={...emptyLearning(),completed:LESSONS.map(l=>l.id)};const result=recommendLesson(p);assert.equal(result.kind,'review');assert.ok(LESSONS.some(l=>l.id===result.lessonId));assert.equal(p.completed.length,27);
 });

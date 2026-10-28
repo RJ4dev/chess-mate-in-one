@@ -7,6 +7,7 @@ import {execFileSync} from 'node:child_process';
 import {chromium} from 'playwright';
 import {Chess} from '../../dist/js/chess.js';
 import {foundationsAcceptance} from './foundations.mjs';
+import {pieceSafetyAcceptance} from './piece-safety.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const resultsDir = fileURLToPath(new URL('./results/', import.meta.url));
@@ -338,6 +339,7 @@ try {
       assert.equal(await page.locator('[data-square="a2"]').getAttribute('aria-label'), 'a2, белая пешка');
     });
     await foundationsAcceptance({origin, entry, scenario, login});
+    await pieceSafetyAcceptance({origin, entry, scenario, login});
   }
   report.status = 'passed';
 } catch (error) {
