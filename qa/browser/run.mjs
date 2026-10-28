@@ -250,12 +250,12 @@ try {
       await movesAre(page, 2); await verifyLegalReply(page); await cover.close();
     });
     await scenario(origin, entry, 'exit cannot repaint a different mode', async page => {
-      await pending(page); await page.locator('#home-back').click();
+      await pending(page); await page.locator('#exit-button').click();
       await page.locator('#choose-local').click();
       assert.match(await text(page, 'round-label'), /0 ПОЛУХОДОВ/);
       await staleCannotChange(page);
       assert.equal(await page.locator('[data-square="e2"]').getAttribute('aria-label'), 'e2, белая пешка');
-      await page.locator('#home-back').click(); await page.locator('#choose-computer').click();
+      await page.locator('#exit-button').click(); await page.locator('#choose-computer').click();
       await movesAre(page, 2); await verifyLegalReply(page);
     });
     await scenario(origin, entry, 'profile switch isolates both saved games and late work', async page => {
@@ -289,10 +289,10 @@ try {
       await release(page); await page.locator('#choose-computer').click();
       await move(page, 'e2e4'); await movesAre(page, 2);
       const completed = await saved(page);
-      await page.locator('#home-back').click(); await page.locator('#choose-local').click();
+      await page.locator('#exit-button').click(); await page.locator('#choose-local').click();
       await move(page, 'a2a4');
       assert.deepEqual((await saved(page, 'player:qa-a:mate-local-party-v1')).moves, ['a2a4']);
-      await page.locator('#home-back').click(); await page.locator('#choose-computer').click();
+      await page.locator('#exit-button').click(); await page.locator('#choose-computer').click();
       assert.deepEqual(await saved(page), completed);
       assert.equal(await page.locator('[data-square="a2"]').getAttribute('aria-label'), 'a2, белая пешка');
     });
