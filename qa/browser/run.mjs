@@ -196,10 +196,17 @@ try {
   const check = await browser.newPage();
   await check.goto(origin + '/__preflight');
   assert.equal(await check.locator('body').innerText(), 'browser-preflight');
+  const cover = await check.context().newPage();
+  await cover.bringToFront();
+  await check.waitForFunction(() => document.hidden, null, {timeout: 5000, polling: 50});
+  await check.bringToFront();
+  await check.waitForFunction(() => !document.hidden, null, {timeout: 5000, polling: 50});
+  await cover.close();
   await check.close();
   report.preflight.chromium = 'passed';
+  report.preflight.nativeVisibility = 'passed';
   report.chromium = browser.version();
-  console.log('PASS preflight loopback + headed Chromium');
+  console.log('PASS preflight loopback + headed Chromium + native hidden/visible');
 
   if (!process.argv.includes('--preflight')) for (const entry of ['/dist/', '/index.html']) {
     await scenario(origin, entry, 'real automatic legal reply', async page => {
@@ -230,10 +237,6 @@ try {
       await movesAre(page, 2); await verifyLegalReply(page);
     });
     await scenario(origin, entry, 'real hidden tab cancels pending work', async (page, context) => {
-      // Playwright normally forces each page active via focus emulation.
-      // Disable that test default so a real foreground-tab change can hide this page.
-      const session = await context.newCDPSession(page);
-      await session.send('Emulation.setFocusEmulationEnabled', {enabled: false});
       await page.bringToFront();
       await page.waitForFunction(() => !document.hidden, null, {polling: 50});
       await pending(page);

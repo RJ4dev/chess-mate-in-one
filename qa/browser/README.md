@@ -10,6 +10,13 @@ Linux runner with Chromium and Xvfb. No VPS access, real accounts or secrets.
 2. Prove that loopback binding and headed Chromium launch/close work before
    attempting application tests. Headed Chromium under Xvfb is required to test
    real `document.hidden` transitions when another tab comes to the foreground.
+   The preflight must also prove a native hidden/visible round trip. Playwright
+   normally pins every page visible through its original CDP session. A guarded
+   test-environment adjustment in `prepare-focus.mjs` disables that default at
+   the initialization site of the pinned, disposable Playwright dependency.
+   A separate CDP session cannot release the original session's visibility
+   capturer. The adjustment changes no application assets or visibility APIs;
+   it fails closed if the dependency version or source pattern changes.
 3. Before navigation, intercept every page request. Serve only local assets;
    fulfil sessions/capabilities from in-memory fixtures and reject any other
    external request. No request is forwarded to the configured production API.
