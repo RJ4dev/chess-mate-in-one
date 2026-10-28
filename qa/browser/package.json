@@ -1,0 +1,12 @@
+{
+  "name": "shakhmator-browser-acceptance",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node prepare-focus.mjs && node run.mjs",
+    "preflight": "node prepare-focus.mjs && node run.mjs --preflight"
+  },
+  "devDependencies": {
+    "playwright": "1.58.2"
+  }
+}
