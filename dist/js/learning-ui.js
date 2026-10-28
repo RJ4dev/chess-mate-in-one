@@ -11,9 +11,10 @@ import {createRequestGate} from './ranking-client.js';
 // belongs to one lesson epoch, cancelled by the host before navigation/profile changes.
 export function createLearningUI({doc,store,animations,blocked,paused,toast,tone,home,onProgress=()=>{},narrate=()=>{},voiceEnabled=()=>false}){
  const $=id=>doc.getElementById(id),gate=createRequestGate();
+ let promotion=null;
  let lessonState,progress=store().get(),selected=null,focus='a1',busy=false,seed=0,hintShown=false,storageWarned=false;
  const exercise=()=>exerciseById(lessonState.steps[Math.min(lessonState.index,lessonState.steps.length-1)].exerciseId);
- const active=()=>!busy&&!blocked()&&!paused()&&lessonState?.phase==='playing';
+ const active=()=>!promotion&&!busy&&!blocked()&&!paused()&&lessonState?.phase==='playing';
  const persist=()=>{progress=mergeLearning(progress,store().get());const saved=store().save(progress);if(!saved&&!storageWarned)toast('Учебный прогресс сохранится только до закрытия страницы.');storageWarned=!saved;onProgress(progress);};
  function protectSeen(){if(progress.seen.includes(exercise().id)||progress.achievements[exercise().id]?.assisted)lessonState=markHelp(lessonState);}
  function saveCursor(){
@@ -35,7 +36,7 @@ export function createLearningUI({doc,store,animations,blocked,paused,toast,tone
   $('board').innerHTML=html;$('board').classList.toggle('paused-board',paused());
   if(restore)$('board').querySelector(`[data-square="${restore}"]`)?.focus({preventScroll:true});
  }
- function render(){
+ function render(silent=false){
   if(!lessonState)return;
   const s=lessonState,e=exercise(),lesson=lessonById(s.lessonId,seed),stage=s.steps[Math.min(s.index,s.steps.length-1)].stage;
   doc.body.dataset.phase=s.phase;
@@ -59,8 +60,16 @@ export function createLearningUI({doc,store,animations,blocked,paused,toast,tone
   else if(s.phase==='review'){title=s.result.assistance==='independent'?'Ты справился сам!':'Разобрались вместе!';text=s.result.text;button=s.index===s.steps.length-1?'Итог урока':'Следующее задание';}
   else if(s.phase==='feedback'){title='Попробуем ещё';text=s.result.text;button='Вернуть позицию';}
   else if(s.phase==='finished'){title='Занятие пройдено!';text=lesson.summary;button='К выбору режима';}
+  if(promotion&&!paused()){title='Кем станет пешка?';text='Выбери новую фигуру. Ход завершится после выбора.';button='';}
   $('message').replaceChildren();const h=doc.createElement('h2'),p=doc.createElement('p');h.textContent=title;p.textContent=text;$('message').append(h,p);
-  if(!lesson.textOnly&&!paused()&&!busy&&!blocked())narrate(title+'. '+text);
+  if(promotion&&!paused()){
+   const request=promotion;
+   for(const [type,name] of [['q','Ферзь'],['r','Ладья'],['b','Слон'],['n','Конь']]){
+    const b=doc.createElement('button');b.textContent=name;b.className='secondary-button';b.dataset.promotion=type;
+    b.onclick=async()=>{if(promotion!==request||blocked()||paused()||busy)return;promotion=null;await answer(request.value+type);};$('message').append(b);
+   }
+  }
+  if(!silent&&!lesson.textOnly&&!paused()&&!busy&&!blocked())narrate(title+'. '+text);
   $('primary-button').hidden=!button;$('primary-button').innerHTML=button+' '+icon('arrow');$('primary-button').disabled=busy;
   $('mission-note').textContent=lesson.textOnly?'Здесь учимся с текстовыми подсказками. Можно ошибаться и пробовать снова.':'Можно ошибаться и пробовать снова. Учебные задания не меняют рейтинг.';
   $('board-caption').textContent=busy?'Фигура делает ход…':selected?'Выбери клетку с точкой':s.phase==='demo'?'Сначала посмотрим, затем попробуешь ты':s.phase==='review'?'Посмотри, что изменилось на доске':'Нажми на свою фигуру, затем на клетку';
@@ -89,11 +98,11 @@ export function createLearningUI({doc,store,animations,blocked,paused,toast,tone
  }
  return {
   get textOnly(){return !!lessonById(lessonState?.lessonId,seed)?.textOnly;},
-  render,cancel(){gate.cancel();busy=false;},
-  reset(){gate.cancel();busy=false;lessonState=null;progress=store().get();selected=null;},
+  render,cancel(){gate.cancel();busy=false;if(promotion){promotion={...promotion};render(true);}},
+  reset(){gate.cancel();busy=false;promotion=null;lessonState=null;progress=store().get();selected=null;},
   refreshProgress(){progress=store().get();if(lessonState&&lessonState.phase!=='finished')protectSeen();},
   start(id,resume){
-   gate.cancel();busy=false;progress=store().get();seed=resume?.seed??(id.startsWith('mini-')?Math.floor(Math.random()*12):0);
+   gate.cancel();busy=false;promotion=null;progress=store().get();seed=resume?.seed??(id.startsWith('mini-')?Math.floor(Math.random()*12):0);
    lessonState=beginLesson(id,seed);if(resume&&resume.lessonId===id&&Number.isInteger(resume.index)&&resume.index>=0&&resume.index<lessonState.steps.length){lessonState.index=resume.index;lessonState.phase=lessonState.steps[resume.index].stage==='show'?'demo':'playing';}
    selected=null;hintShown=false;protectSeen();saveCursor();render();
   },
@@ -102,10 +111,12 @@ export function createLearningUI({doc,store,animations,blocked,paused,toast,tone
    const c=new Chess(exercise().fen),p=c.get(sq);
    if(p?.color===c.turn()){selected=selected===sq?null:sq;tone('select');render();return;}
    if(!selected){toast(c.turn()==='w'?'Выбери белую фигуру.':'Выбери чёрную фигуру.');return;}
-   const value=selected+sq;await answer(value);
+   const value=selected+sq;
+   if(c.moves({square:selected,verbose:true}).some(m=>m.to===sq&&m.promotion)){promotion={value};render();return;}
+   await answer(value);
   },
   primary(){
-   if(busy||blocked())return;
+   if(promotion||busy||blocked())return;
    if(lessonState.phase==='demo'){void answer(null);return;}
    if(lessonState.phase==='feedback'){lessonState=retryStep(lessonState);render();return;}
    if(lessonState.phase==='finished'){home();return;}
@@ -113,6 +124,6 @@ export function createLearningUI({doc,store,animations,blocked,paused,toast,tone
   },
   hint(){if(!active())return;lessonState=markHelp(lessonState);progress=rememberHelp(progress,exercise().id);saveCursor();hintShown=true;selected=solutions(exercise())[0]?.slice(0,2)||null;render();tone('hint');},
   showSolution(){if(active()){lessonState=markHelp(lessonState);void answer(null);}},
-  clearSelection(){selected=null;render();}
+  clearSelection(){promotion=null;selected=null;render();}
  };
 }

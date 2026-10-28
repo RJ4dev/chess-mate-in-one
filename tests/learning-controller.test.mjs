@@ -85,3 +85,25 @@ test('new text-only chapters do not silently switch back to the synthetic system
  ui.start('beginner-rook-1');assert.equal(spoken.length,0);assert.equal(ui.nodes.get('repeat-voice').hidden,true);
  ui.start('check');assert.ok(spoken.length>0);assert.equal(ui.nodes.get('repeat-voice').hidden,false);
 });
+
+test('promotion waits for a choice and stale choice cannot affect another lesson',async()=>{
+ const store=createLearningStore(null),ui=controller(()=>store);
+ ui.start('special-promotion',{lessonId:'special-promotion',index:1});
+ await ui.square('a2');await ui.square('a1');
+ assert.deepEqual(store.get().achievements,{});
+ const choices=ui.nodes.get('message').children.filter(n=>n.dataset?.promotion);
+ assert.equal(choices.length,4);const knight=choices.find(n=>n.dataset.promotion==='n');
+ await knight.onclick();assert.match(ui.nodes.get('board').innerHTML,/a1, чёрный конь/);
+ ui.start('special-promotion',{lessonId:'special-promotion',index:1});await ui.square('a2');await ui.square('a1');
+ const stale=ui.nodes.get('message').children.find(n=>n.dataset?.promotion==='q');
+ ui.cancel();ui.start('check');await stale.onclick();assert.match(ui.nodes.get('motif').textContent,/шах/);
+});
+
+test('promotion choice remains usable after cancelling for menu or background',async()=>{
+ const store=createLearningStore(null),ui=controller(()=>store);
+ ui.start('special-promotion',{lessonId:'special-promotion',index:1});await ui.square('a2');await ui.square('a1');
+ const old=ui.nodes.get('message').children.find(n=>n.dataset?.promotion==='q');
+ ui.cancel();await old.onclick();assert.deepEqual(store.get().achievements,{});
+ const current=ui.nodes.get('message').children.find(n=>n.dataset?.promotion==='r');
+ await current.onclick();assert.match(ui.nodes.get('board').innerHTML,/a1, чёрная ладья/);
+});
