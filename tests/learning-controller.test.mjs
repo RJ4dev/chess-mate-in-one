@@ -140,3 +140,13 @@ test('inactive lesson cancellation cannot repaint another mode after promotion',
  let current=true;const ui=controller(()=>createLearningStore(null),undefined,undefined,undefined,()=>current);
  ui.start('special-promotion',{lessonId:'special-promotion',index:1});await ui.square('a2');await ui.square('a1');current=false;ui.nodes.get('board').innerHTML='local-party-board';ui.cancel();assert.equal(ui.nodes.get('board').innerHTML,'local-party-board');
 });
+
+test('board study accepts a single square click without moving a chess piece and persists its result',async()=>{
+ const store=createLearningStore(null),ui=controller(()=>store);ui.start('board-orientation');
+ assert.equal((ui.nodes.get('board').innerHTML.match(/class="piece /g)||[]).length,0);
+ ui.primary();await Promise.resolve();await Promise.resolve();ui.primary();
+ await ui.square('a1');assert.equal(store.get().achievements['orientation-white-left'].assisted,true);
+ ui.primary();await ui.square('a8');assert.equal(store.get().achievements['orientation-black-right'].independent,true);
+ assert.match(ui.nodes.get('board-label').textContent,/Белые снизу/);
+ ui.cancel();ui.start('check');assert.match(ui.nodes.get('board-label').textContent,/Ход белых/);
+});
