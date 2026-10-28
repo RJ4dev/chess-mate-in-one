@@ -65,6 +65,7 @@ export function createLearningUI({doc,store,animations,blocked,paused,toast,tone
   else if(s.phase==='finished'){title='Занятие пройдено!';text=lesson.summary;button='К выбору режима';}
   if(shared&&s.phase==='finished'){title='Семейная глава пройдена!';text='Спасибо за игру вместе! Участие сохранено отдельно от личных уроков и наград.';}
   if(promotion&&!paused()){title='Кем станет пешка?';text='Выбери новую фигуру. Ход завершится после выбора.';button='';}
+  if(shared&&!paused()&&s.phase!=='finished')title=familyTurn(s.index)+' · '+title;
   $('message').replaceChildren();const h=doc.createElement('h2'),p=doc.createElement('p');h.textContent=title;p.textContent=text;$('message').append(h,p);
   if(promotion&&!paused()){
    const request=promotion;

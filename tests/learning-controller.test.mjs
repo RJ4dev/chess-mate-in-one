@@ -28,11 +28,13 @@ test('shared controller labels turns and never praises a family answer as indivi
  const ui=controller(()=>store,undefined,t=>spoken.push(t),()=>true,undefined,()=>true);
  ui.start('check',{lessonId:'check',index:1,seed:0});
  assert.match(ui.nodes.get('mission-tag').textContent,/Участник 1/i);
+ assert.match(ui.nodes.get('message').children.map(x=>x.textContent).join(' '),/Участник 1/);
  await ui.square('a2');await ui.square('f7');
  assert.doesNotMatch(ui.nodes.get('message').children.map(x=>x.textContent).join(' '),/сам!/);
  assert.deepEqual(store.get().achievements['check-bishop-w'],{assisted:true,independent:false});
  assert.equal(spoken.length,0);assert.equal(ui.textOnly,true);
  ui.primary();assert.match(ui.nodes.get('mission-tag').textContent,/Участник 2/i);
+ assert.match(ui.nodes.get('message').children.map(x=>x.textContent).join(' '),/Участник 2/);
 });
 
 test('cancelled family answer cannot write into personal progress after leaving the shared chapter',async()=>{
