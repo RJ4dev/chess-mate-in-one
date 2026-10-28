@@ -183,6 +183,15 @@ const learningIds = new Map();
 for (const [goal, families, skill] of [['check', ['rook','bishop','knight','queen','pawn','discovery'], 'give-check'], ['save', ['rook','bishop','knight','pawn','queen','double'], 'escape-check'], ['mate', ['rook','queen'], 'mate-one']]) {
   for (const family of families) for (const color of ['w','b']) learningIds.set(`${goal}-${family}-${color}`, { goal, skill });
 }
+// Additive catalogue capability keeps version-1 clients and existing SQLite facts valid.
+// These IDs are fixed protocol identifiers; never accept arbitrary browser lesson names.
+for (const topic of ['board','rook','bishop','queen','king','knight','pawn','captures']) {
+  const ids = topic === 'board' ? Array.from({length:8},(_,i)=>`beginner-board-${i+1}`)
+    : Array.from({length:4},(_,i)=>['w','b'].map(color=>`beginner-${topic}-${i+1}-${color}`)).flat();
+  for (const id of ids) learningIds.set(id, {goal:'move',skill:`beginner-${topic}`});
+  learningLessons[`beginner-${topic}-1`] = ids.slice(0,4);
+  learningLessons[`beginner-${topic}-2`] = ids.slice(4);
+}
 function validateLearningEvent(event) {
   if (!record(event) || Object.keys(event).some(k => !['eventId','contentVersion','lessonId','exerciseId','skillId','assistance'].includes(k)) || event.contentVersion !== 1 || typeof event.eventId !== 'string' || !roundPattern.test(event.eventId) || !['assisted','independent'].includes(event.assistance)) invalid('Invalid learning event.');
   const exercise = learningIds.get(event.exerciseId);
@@ -279,7 +288,7 @@ export async function startBackend({ dataFile, learningFile, allowedOrigin, host
       const realIp = req.headers['x-real-ip'];
       const ip = trustProxyLoopback && ['127.0.0.1', '::ffff:127.0.0.1'].includes(peer) && typeof realIp === 'string' && isIP(realIp) ? realIp : peer;
       limiter.check(`request:${ip}`, 240, 60_000);
-      if (req.method === 'GET' && route === '/capabilities') return send(200, { learning: { enabled: !!learning, contentVersion: 1 } });
+      if (req.method === 'GET' && route === '/capabilities') return send(200, { learning: { enabled: !!learning, contentVersion: 1, contentGroups: learning ? ['beginner-v1'] : [] } });
       if (req.method === 'GET' && route === '/leaderboard') {
         return send(200, { players: store.data.players.map(publicPlayer).sort((a, b) => b.stars - a.stars || a.name.localeCompare(b.name) || a.id.localeCompare(b.id)) });
       }

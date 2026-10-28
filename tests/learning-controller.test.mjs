@@ -70,7 +70,7 @@ test('beginner lesson explains its piece and marks an accessible destination',()
  const copy=ui.nodes.get('message').children.map(x=>x.textContent).join(' ');
  assert.match(copy,/ладь/i);assert.doesNotMatch(copy,/Мат —/);
  assert.match(ui.nodes.get('board').innerHTML,/цель задания/);
- assert.match(ui.nodes.get('mission-note').textContent,/этом устройстве/);
+ assert.match(ui.nodes.get('mission-note').textContent,/текстовыми подсказками/);
 });
 test('beginner demo uses its target goal and advances without claiming checkmate',async()=>{
  const store=createLearningStore(null),ui=controller(()=>store);ui.start('beginner-rook-1');

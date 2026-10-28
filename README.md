@@ -37,6 +37,7 @@ npm run validate
 npm run validate:exercises
 python3 tests/installer.test.py
 python3 tests/upgrade-learning.test.py
+python3 tests/upgrade-beginner.test.py
 ```
 
 Сборка:
