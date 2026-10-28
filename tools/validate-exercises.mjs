@@ -6,7 +6,7 @@ const ids=new Set();
 for(const e of EXERCISES){
  assert(!ids.has(e.id),`Duplicate ${e.id}`);ids.add(e.id);
  assert.equal(e.positionKind,'legalChess');
- if(e.goal==='move'){assert(/^[a-h][1-8]$/.test(e.targetSquare),e.id);assert(['p','n','b','r','q','k'].includes(e.requiredPiece),e.id);assert.equal(e.localOnly,true,e.id);}
+ if(e.goal==='move'){assert(/^[a-h][1-8]$/.test(e.targetSquare),e.id);assert(['p','n','b','r','q','k'].includes(e.requiredPiece),e.id);assert.equal(e.syncGroup,'beginner-v1',e.id);}
  const c=new Chess(e.fen),turn=c.turn(),kings=c.board().flat().filter(p=>p?.type==='k');
  assert.equal(kings.length,2,e.id);
  const other=kings.find(p=>p.color!==turn);
@@ -30,7 +30,7 @@ for(const topic of BEGINNER_TOPICS){
  const pool=EXERCISES.filter(e=>e.topicId===topic.id);assert.equal(pool.length,8,topic.id);
  assert.equal(new Set(pool.map(e=>e.fen+' '+e.targetSquare)).size,8,topic.id);
  assert(pool.some(e=>new Chess(e.fen).turn()==='w')&&pool.some(e=>new Chess(e.fen).turn()==='b'),topic.id);
- assert.equal(topic.lessonIds.length,2,topic.id);for(const id of topic.lessonIds){const l=LESSONS.find(l=>l.id===id);assert.equal(l.steps.length,4,id);assert(l.introduction&&l.hint&&l.taskTitle,id);assert.equal(l.localOnly,true,id);}
+ assert.equal(topic.lessonIds.length,2,topic.id);for(const id of topic.lessonIds){const l=LESSONS.find(l=>l.id===id);assert.equal(l.steps.length,4,id);assert(l.introduction&&l.hint&&l.taskTitle,id);assert.equal(l.textOnly,true,id);}
 }
 for(const w of WORLDS)for(const id of w.lessonIds)assert(LESSONS.some(l=>l.id===id));
 console.log(`Validated ${EXERCISES.length} exercises, all legal answers, both colours, ${LESSONS.length} lessons.`);

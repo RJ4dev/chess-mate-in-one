@@ -39,7 +39,7 @@ export function createLearningUI({doc,store,animations,blocked,paused,toast,tone
   if(!lessonState)return;
   const s=lessonState,e=exercise(),lesson=lessonById(s.lessonId,seed),stage=s.steps[Math.min(s.index,s.steps.length-1)].stage;
   doc.body.dataset.phase=s.phase;
-  $('repeat-voice').hidden=!voiceEnabled()||!!lessonById(s.lessonId,seed).localOnly;
+  $('repeat-voice').hidden=!voiceEnabled()||!!lessonById(s.lessonId,seed).textOnly;
   board();
   $('board-label').textContent=paused()?'Пауза':new Chess(e.fen).turn()==='w'?'Ход белых':'Ход чёрных';
   $('motif').textContent=lesson.title;
@@ -60,9 +60,9 @@ export function createLearningUI({doc,store,animations,blocked,paused,toast,tone
   else if(s.phase==='feedback'){title='Попробуем ещё';text=s.result.text;button='Вернуть позицию';}
   else if(s.phase==='finished'){title='Занятие пройдено!';text=lesson.summary;button='К выбору режима';}
   $('message').replaceChildren();const h=doc.createElement('h2'),p=doc.createElement('p');h.textContent=title;p.textContent=text;$('message').append(h,p);
-  if(!lesson.localOnly&&!paused()&&!busy&&!blocked())narrate(title+'. '+text);
+  if(!lesson.textOnly&&!paused()&&!busy&&!blocked())narrate(title+'. '+text);
   $('primary-button').hidden=!button;$('primary-button').innerHTML=button+' '+icon('arrow');$('primary-button').disabled=busy;
-  $('mission-note').textContent=lesson.localOnly?'Здесь учимся с текстовыми подсказками. Прогресс — на этом устройстве.':'Можно ошибаться и пробовать снова. Учебные задания не меняют рейтинг.';
+  $('mission-note').textContent=lesson.textOnly?'Здесь учимся с текстовыми подсказками. Можно ошибаться и пробовать снова.':'Можно ошибаться и пробовать снова. Учебные задания не меняют рейтинг.';
   $('board-caption').textContent=busy?'Фигура делает ход…':selected?'Выбери клетку с точкой':s.phase==='demo'?'Сначала посмотрим, затем попробуешь ты':s.phase==='review'?'Посмотри, что изменилось на доске':'Нажми на свою фигуру, затем на клетку';
  }
  async function answer(value){
@@ -88,7 +88,7 @@ export function createLearningUI({doc,store,animations,blocked,paused,toast,tone
   if(isCurrent())busy=false;
  }
  return {
-  get textOnly(){return !!lessonById(lessonState?.lessonId,seed)?.localOnly;},
+  get textOnly(){return !!lessonById(lessonState?.lessonId,seed)?.textOnly;},
   render,cancel(){gate.cancel();busy=false;},
   reset(){gate.cancel();busy=false;lessonState=null;progress=store().get();selected=null;},
   refreshProgress(){progress=store().get();if(lessonState&&lessonState.phase!=='finished')protectSeen();},

@@ -5,7 +5,7 @@ import * as curriculum from '../dist/js/curriculum.js';
 import {recordLearning,emptyLearning} from '../dist/js/learning-progress.js';
 test('introductory course has eight topics, eight unique scenarios per topic and short lessons',()=>{
  assert.equal(curriculum.BEGINNER_TOPICS?.length,8);
- const all=EXERCISES.filter(e=>e.localOnly);assert.equal(all.length,64);
+ const all=EXERCISES.filter(e=>e.syncGroup==='beginner-v1');assert.equal(all.length,64);
  for(const t of curriculum.BEGINNER_TOPICS){
   const pool=all.filter(e=>e.topicId===t.id);assert.equal(pool.length,8,t.id);
   assert.equal(new Set(pool.map(e=>e.fen+' '+e.targetSquare)).size,8,t.id);
@@ -13,7 +13,7 @@ test('introductory course has eight topics, eight unique scenarios per topic and
  }
 });
 test('every beginner target accepts precisely legal moves meeting the goal, including both colours',()=>{
- const all=EXERCISES.filter(e=>e.localOnly);assert.equal(all.length,64);
+ const all=EXERCISES.filter(e=>e.syncGroup==='beginner-v1');assert.equal(all.length,64);
  for(const e of all){
   const c=new Chess(e.fen),other=c.board().flat().find(p=>p?.type==='k'&&p.color!==c.turn());
   assert.equal(c.isCheck(),false,e.id);assert.equal(c.isAttacked(other.square,c.turn()),false,e.id);
