@@ -53,3 +53,22 @@ test('square lessons preserve demonstration, retries and independent answer sema
  s=nextStep(s);s=submitAnswer(s,{kind:'square',value:'a8'});assert.equal(s.result.assistance,'independent');
  s=nextStep(s);s=submitAnswer(s,{kind:'square',value:'h8'});assert.equal(nextStep(s).phase,'finished');
 });
+
+test('literal starting-piece answer sets accept every match and reject every other square',()=>{
+ const expected={
+  'setup-rooks':['a1','h1','a8','h8'],
+  'setup-knights':['b1','g1','b8','g8'],
+  'setup-bishops':['c1','f1','c8','f8'],
+  'setup-pawns':[...'abcdefgh'].flatMap(f=>[f+'2',f+'7']),
+  'setup-white-queen':['d1'],'setup-black-queen':['d8'],
+  'setup-white-king':['e1'],'setup-black-king':['e8']
+ };
+ for(const [id,answers] of Object.entries(expected)){
+  const exercise=exercises.EXERCISES.find(e=>e.id===id);
+  assert.deepEqual([...exercise.answers].sort(),[...answers].sort(),id);
+  for(const file of 'abcdefgh')for(let rank=1;rank<=8;rank++){
+   const square=file+rank;
+   assert.equal(exercises.judgeSquare(exercise,square).correct,answers.includes(square),`${id}: ${square}`);
+  }
+ }
+});

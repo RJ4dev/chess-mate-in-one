@@ -6,6 +6,7 @@ import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
 import {chromium} from 'playwright';
 import {Chess} from '../../dist/js/chess.js';
+import {foundationsAcceptance} from './foundations.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const resultsDir = fileURLToPath(new URL('./results/', import.meta.url));
@@ -19,7 +20,7 @@ for (const [prefix, stars] of [['', 77], ['player:qa-a:', 123], ['player:qa-b:',
     rounds: 1, solved: ['fixture-mate'], recorded: ['fixture-round'], badges: ['first-mate'], motifs: ['rook']});
   fixture[prefix + 'mate-learning-v1'] = JSON.stringify({version: 1,
     achievements: {'check-rook-w': {assisted: true, independent: false}},
-    completed: [], seen: ['check-rook-w'], resume: {lessonId: 'check', index: 2, seed: 0}});
+    completed: ['mate'], seen: ['check-rook-w'], resume: {lessonId: 'check', index: 2, seed: 0}});
 }
 fixture['mate-player-session'] = JSON.stringify(profile('a'));
 fixture[gameKey('b')] = JSON.stringify({version: 1, moves: ['d2d4', 'g8f6']});
@@ -145,9 +146,23 @@ async function login(page, name) {
   assert.ok(await page.locator('#mode-home').isVisible());
 }
 
-async function scenario(origin, entry, name, run) {
+function assertLearningPreserved(before, after) {
+  assert.equal(after?.version, 1);
+  for (const id of before.completed || []) assert.ok(after.completed.includes(id), `lost completed lesson: ${id}`);
+  for (const id of before.seen || []) assert.ok(after.seen.includes(id), `lost seen exercise: ${id}`);
+  for (const [id, fact] of Object.entries(before.achievements || {})) {
+    for (const flag of ['assisted', 'independent']) if (fact[flag] === true) {
+      assert.equal(after.achievements[id]?.[flag], true, `lost ${flag} fact: ${id}`);
+    }
+  }
+}
+
+async function scenario(origin, entry, name, run, options = {}) {
   const context = await browser.newContext({viewport: {width: 412, height: 915}, serviceWorkers: 'block'});
-  const unexpected = [], errors = [], mocked = [];
+  const unexpected = [], errors = [], mocked = [], events = [];
+  const seed = {...fixture, ...options.seed};
+  const allowedLearning = (options.learningProfiles || []).map(id => `player:qa-${id}:mate-learning-v1`);
+  const remoteLearning = {version: 1, achievements: {}, completed: [], seen: [], resume: null};
   // Installed on the context BEFORE any page/navigation; no production forwarding.
   await context.route('**/*', async route => {
     const req = route.request(), url = new URL(req.url());
@@ -163,13 +178,28 @@ async function scenario(origin, entry, name, run) {
       }
       if (url.pathname === '/capabilities' && req.method() === 'GET') {
         mocked.push({path: url.pathname, method: req.method()});
-        await reply({learning: {enabled: false}}); return;
+        await reply({learning: Array.isArray(options.groups) ? {enabled: true, contentVersion: 1, contentGroups: options.groups} : {enabled: false}}); return;
+      }
+      if (Array.isArray(options.groups) && url.pathname === '/learning' && req.method() === 'GET') {
+        mocked.push({path: url.pathname, method: req.method()});
+        await reply({learning: remoteLearning}); return;
+      }
+      if (Array.isArray(options.groups) && url.pathname === '/learning/events' && req.method() === 'POST') {
+        const batch = req.postDataJSON().events;
+        assert.ok(Array.isArray(batch));
+        events.push(...batch);
+        for (const event of batch) {
+          const previous = remoteLearning.achievements[event.exerciseId] || {assisted: false, independent: false};
+          remoteLearning.achievements[event.exerciseId] = {...previous, [event.assistance]: true};
+        }
+        mocked.push({path: url.pathname, method: req.method()});
+        await reply({learning: remoteLearning, accepted: batch.map(e => e.eventId)}); return;
       }
     }
     unexpected.push({origin: url.origin, path: url.pathname, method: req.method()});
     await route.abort('blockedbyclient');
   });
-  await context.addInitScript(timerGate, {origin, seed: fixture});
+  await context.addInitScript(timerGate, {origin, seed});
   const page = await context.newPage();
   page.on('pageerror', error => errors.push(error.message));
   const result = {entry, name, status: 'running'};
@@ -177,14 +207,19 @@ async function scenario(origin, entry, name, run) {
   try {
     await page.goto(origin + entry);
     await page.locator('#choose-computer').waitFor();
-    await run(page, context);
-    const protectedStores = await page.evaluate(() => Object.fromEntries(Object.keys(localStorage)
-      .filter(k => /mate-(one-progress|learning)-v1$/.test(k)).sort().map(k => [k, localStorage.getItem(k)])));
-    const expectedStores = Object.fromEntries(Object.entries(fixture).filter(([k]) => /mate-(one-progress|learning)-v1$/.test(k)).sort());
+    await run(page, context, {events, mocked});
+    const protectedStores = await page.evaluate(allowed => Object.fromEntries(Object.keys(localStorage)
+      .filter(k => /mate-(one-progress|learning)-v1$/.test(k) && !allowed.includes(k)).sort().map(k => [k, localStorage.getItem(k)])), allowedLearning);
+    const expectedStores = Object.fromEntries(Object.entries(seed).filter(([k]) => /mate-(one-progress|learning)-v1$/.test(k) && !allowedLearning.includes(k)).sort());
     assert.deepEqual(protectedStores, expectedStores, 'existing rewards/learning facts changed');
+    for (const key of allowedLearning) {
+      const after = await page.evaluate(key => JSON.parse(localStorage.getItem(key)), key);
+      assertLearningPreserved(JSON.parse(seed[key]), after);
+    }
     assert.deepEqual(unexpected, [], 'unmocked external request attempted');
     assert.deepEqual(errors, [], 'browser application errors');
     result.status = 'passed'; result.mockedRequests = mocked;
+    if (options.learningProfiles) result.syncedExerciseIds = [...new Set(events.map(e => e.exerciseId))];
     console.log(`PASS ${entry} ${name}`);
   } catch (error) {
     result.status = 'failed'; result.error = error.stack; result.unexpectedRequests = unexpected;
@@ -302,6 +337,7 @@ try {
       assert.deepEqual(await saved(page), completed);
       assert.equal(await page.locator('[data-square="a2"]').getAttribute('aria-label'), 'a2, белая пешка');
     });
+    await foundationsAcceptance({origin, entry, scenario, login});
   }
   report.status = 'passed';
 } catch (error) {
