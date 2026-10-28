@@ -193,7 +193,8 @@ try {
   report.preflight.loopback = 'passed';
   // Under Xvfb, real foreground/background tabs produce real document.hidden changes.
   browser = await chromium.launch({headless: false});
-  const check = await browser.newPage();
+  const checkContext = await browser.newContext();
+  const check = await checkContext.newPage();
   await check.goto(origin + '/__preflight');
   assert.equal(await check.locator('body').innerText(), 'browser-preflight');
   const cover = await check.context().newPage();
@@ -203,6 +204,7 @@ try {
   await check.waitForFunction(() => !document.hidden, null, {timeout: 5000, polling: 50});
   await cover.close();
   await check.close();
+  await checkContext.close();
   report.preflight.chromium = 'passed';
   report.preflight.nativeVisibility = 'passed';
   report.chromium = browser.version();
