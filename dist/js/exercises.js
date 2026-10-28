@@ -1,4 +1,5 @@
 import {Chess,uci} from './chess.js';
+import {SPECIAL_EXERCISES} from './special-exercises.js';
 import {BEGINNER_EXERCISES} from './beginner-exercises.js';
 
 // Rotation with colour exchange keeps the rule and introduces play as Black.
@@ -26,7 +27,7 @@ const seeds=[
 ];
 const prompts={check:'Сделай ход с шахом чужому королю.',save:'Твой король под шахом. Найди любой способ спасти его.',mate:'Поставь мат за один ход.'};
 const skills={check:'give-check',save:'escape-check',mate:'mate-one'};
-export const EXERCISES=seeds.flatMap(([goal,familyId,fen])=>['w','b'].map(color=>({id:`${goal}-${familyId}-${color}`,goal,familyId,skillId:skills[goal],positionKind:'legalChess',fen:color==='w'?fen:opposite(fen),prompt:prompts[goal]}))).concat(BEGINNER_EXERCISES);
+export const EXERCISES=seeds.flatMap(([goal,familyId,fen])=>['w','b'].map(color=>({id:`${goal}-${familyId}-${color}`,goal,familyId,skillId:skills[goal],positionKind:'legalChess',fen:color==='w'?fen:opposite(fen),prompt:prompts[goal]}))).concat(BEGINNER_EXERCISES,SPECIAL_EXERCISES);
 export const exerciseById=id=>EXERCISES.find(e=>e.id===id);
 
 export function judgeMove(exercise,value){
@@ -39,7 +40,7 @@ export function judgeMove(exercise,value){
  }
  if(exercise.goal==='move'){
   const correct=move.to===exercise.targetSquare&&(!exercise.requiredPiece||move.piece===exercise.requiredPiece)&&(!exercise.requireCapture||!!move.captured);
-  return {correct,kind:correct?'correct':'wrong',text:correct?(move.captured?'Получилось! Ты взял чужую фигуру.':'Получилось! Фигура дошла до звёздочки.'):'Этот ход разрешён, но цель ещё не достигнута. Найди клетку со звёздочкой.',move,fenAfter:chess.fen(),uci:uci(move)};
+  return {correct,kind:correct?'correct':'wrong',text:correct?(/[kq]/.test(move.flags)?'Рокировка получилась! Король и ладья сделали общий ход.':move.captured?'Получилось! Ты взял чужую фигуру.':'Получилось! Фигура дошла до звёздочки.'):'Этот ход разрешён, но цель ещё не достигнута. Найди клетку со звёздочкой.',move,fenAfter:chess.fen(),uci:uci(move)};
  }
  const correct=exercise.goal==='check'?chess.isCheck():exercise.goal==='save'?underCheck:chess.isCheckmate();
  const text=correct?(exercise.goal==='save'?(move.captured?'Ты взял атакующую фигуру. Король в безопасности!':move.piece==='k'?'Король ушёл из-под шаха!':'Ты перекрыл нападение. Король в безопасности!'):chess.isCheckmate()?'Это мат! Король под шахом, а законной защиты нет.':'Это шах: твоя фигура напала на короля!'):(chess.isStalemate()?'Это пат: шаха нет и ходов нет. Для мата нужен шах.':chess.isCheck()?'Шах есть, но у короля ещё есть законная защита. Попробуй поставить мат.':'Ход законный, но шаха нет. Найди ход, который нападёт на короля.');

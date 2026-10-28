@@ -6,7 +6,7 @@ const ids=new Set();
 for(const e of EXERCISES){
  assert(!ids.has(e.id),`Duplicate ${e.id}`);ids.add(e.id);
  assert.equal(e.positionKind,'legalChess');
- if(e.goal==='move'){assert(/^[a-h][1-8]$/.test(e.targetSquare),e.id);assert(['p','n','b','r','q','k'].includes(e.requiredPiece),e.id);assert.equal(e.syncGroup,'beginner-v1',e.id);}
+ if(e.goal==='move'){assert(/^[a-h][1-8]$/.test(e.targetSquare),e.id);assert(['p','n','b','r','q','k'].includes(e.requiredPiece),e.id);assert(['beginner-v1','special-v1'].includes(e.syncGroup),e.id);}
  const c=new Chess(e.fen),turn=c.turn(),kings=c.board().flat().filter(p=>p?.type==='k');
  assert.equal(kings.length,2,e.id);
  const other=kings.find(p=>p.color!==turn);
