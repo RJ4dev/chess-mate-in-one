@@ -1,6 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {createLearningUI} from '../dist/js/learning-ui.js';
 import {createLearningStore,recordLearning} from '../dist/js/learning-progress.js';
+import {playerStorage} from '../dist/js/ranking-client.js';
 
 // Only the DOM/animation boundary is a double. Assertions inspect the real
 // controller's saved progression across cancellation, restart and player changes.
@@ -12,17 +13,21 @@ function controller(store,animations={move:async()=>{}},narrate=()=>{},voiceEnab
 }
 test('rescue controller marks the threatened piece and preserves help through reload and profiles',async()=>{
  const map=new Map(),storage={getItem:k=>map.get(k),setItem:(k,v)=>map.set(k,v)};
- const a=createLearningStore(storage,'alice'),b=createLearningStore(storage,'bob');let current=a,ui=controller(()=>current);
+ let a=createLearningStore(playerStorage(storage,'alice'));const b=createLearningStore(playerStorage(storage,'bob'));let current=a,ui=controller(()=>current);
  ui.start('piece-safety-2',{lessonId:'piece-safety-2',index:2,seed:0});
  assert.match(ui.nodes.get('board').innerHTML,/d3, белый ферзь, спасаемая фигура/);
  assert.match(ui.nodes.get('board-caption').textContent,/спасти/);
  assert.match(ui.nodes.get('message').children.map(x=>x.textContent).join(' '),/Пешка напала/);
- ui.hint();ui.cancel();ui=controller(()=>current);ui.start('piece-safety-2',a.get().resume);
+ ui.hint();ui.cancel();a=createLearningStore(playerStorage(storage,'alice'));current=a;ui=controller(()=>current);ui.start('piece-safety-2',a.get().resume);
  await ui.square('f2');await ui.square('e4');
  assert.deepEqual(a.get().achievements['safety-queen-w'],{assisted:true,independent:false});
  assert.equal(a.get().resume.index,3);
  current=b;ui.reset();ui.start('piece-safety-1');assert.deepEqual(b.get().achievements,{});
  assert.equal(a.get().resume.index,3);
+ const restoredA=createLearningStore(playerStorage(storage,'alice')),restoredB=createLearningStore(playerStorage(storage,'bob'));
+ assert.equal(restoredA.get().resume.index,3);
+ assert.deepEqual(restoredA.get().achievements['safety-queen-w'],{assisted:true,independent:false});
+ assert.equal(restoredB.get().achievements['safety-queen-w'],undefined);
 });
 test('help and failed attempts stay assisted when the actual controller resumes',async()=>{
  for(const action of ['hint','wrong']){

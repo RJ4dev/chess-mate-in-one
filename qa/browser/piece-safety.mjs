@@ -24,7 +24,16 @@ async function complete(page,id){
  const answers=id==='piece-safety-1'?['h7g7','d4f5','e5c4']:['f6g7','f2e4','c7d5'];
  for(let i=0;i<answers.length;i++){
   assert.ok(await page.locator('#message p').isVisible(),'Instructions must remain visible in simple UI');
-  await answer(page,answers[i]);await primary(page);await phase(page,i===2?'finished':'playing');
+  await answer(page,answers[i]);
+  if(id==='piece-safety-2'&&i===1){
+   assert.match(await page.locator('[data-square="d3"]').getAttribute('aria-label'),/белый ферзь/);
+   assert.match(await page.locator('[data-square="e4"]').getAttribute('aria-label'),/белый конь/);
+  }
+  if(id==='piece-safety-2'&&i===2){
+   assert.match(await page.locator('[data-square="e6"]').getAttribute('aria-label'),/чёрный ферзь/);
+   assert.match(await page.locator('[data-square="d5"]').getAttribute('aria-label'),/чёрный конь/);
+  }
+  await primary(page);await phase(page,i===2?'finished':'playing');
  }
  const p=await progress(page);assert.ok(p.completed.includes(id));assert.equal(p.resume,null);
  const names=id==='piece-safety-1'?['safety-rook-b','safety-knight-w','safety-knight-b']:['safety-bishop-b','safety-queen-w','safety-queen-b'];
@@ -52,8 +61,6 @@ export async function pieceSafetyAcceptance({origin,entry,scenario,login}){
 
  await scenario(origin,entry,'rescue: capture attacker with another piece, both colours and completion',async page=>{
   await open(page,'piece-safety-2');await complete(page,'piece-safety-2');
-  assert.match(await page.locator('[data-square="e6"]').getAttribute('aria-label'),/чёрный ферзь/);
-  assert.match(await page.locator('[data-square="d5"]').getAttribute('aria-label'),/чёрный конь/);
   assert.equal(await page.locator('#total-stars').innerText(),'123');
  },options);
 
