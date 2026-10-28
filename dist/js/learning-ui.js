@@ -6,10 +6,11 @@ import {LESSONS,lessonById,CONTENT_VERSION} from './curriculum.js';
 import {beginLesson,nextStep,retryStep,markHelp,animateAnswer} from './lesson-engine.js';
 import {recordLearning,rememberHelp,mergeLearning} from './learning-progress.js';
 import {createRequestGate} from './ranking-client.js';
+import {familyTurn} from './family.js';
 
 // The controller owns no authentication or ranking scores. Every async answer
 // belongs to one lesson epoch, cancelled by the host before navigation/profile changes.
-export function createLearningUI({doc,store,animations,blocked,paused,toast,tone,home,onProgress=()=>{},narrate=()=>{},voiceEnabled=()=>false,isCurrent=()=>true}){
+export function createLearningUI({doc,store,animations,blocked,paused,toast,tone,home,onProgress=()=>{},narrate=()=>{},voiceEnabled=()=>false,isCurrent=()=>true,collaborative=()=>false}){
  const $=id=>doc.getElementById(id),gate=createRequestGate();
  let promotion=null;
  let lessonState,progress=store().get(),selected=null,focus='a1',busy=false,seed=0,hintShown=false,storageWarned=false;
@@ -40,7 +41,8 @@ export function createLearningUI({doc,store,animations,blocked,paused,toast,tone
   if(!lessonState)return;
   const s=lessonState,e=exercise(),lesson=lessonById(s.lessonId,seed),stage=s.steps[Math.min(s.index,s.steps.length-1)].stage;
   doc.body.dataset.phase=s.phase;
-  $('repeat-voice').hidden=!voiceEnabled()||!!lessonById(s.lessonId,seed).textOnly;
+  const shared=collaborative();
+  $('repeat-voice').hidden=shared||!voiceEnabled()||!!lessonById(s.lessonId,seed).textOnly;
   board();
   $('board-label').textContent=paused()?'Пауза':new Chess(e.fen).turn()==='w'?'Ход белых':'Ход чёрных';
   $('motif').textContent=lesson.title;
@@ -49,6 +51,7 @@ export function createLearningUI({doc,store,animations,blocked,paused,toast,tone
   $('steps').setAttribute('aria-label',`Шаг ${Math.min(s.index+1,s.steps.length)} из ${s.steps.length}`);
   $('hearts').innerHTML='<span class="training-symbol" aria-hidden="true">∞</span>';$('hearts').setAttribute('aria-label','Учимся без потери сердечек');
   $('mission-tag').textContent=stage==='show'?'СМОТРИМ ВМЕСТЕ':stage==='guided'?'ПРОБУЕМ ВМЕСТЕ':stage==='independent'?'ПОПРОБУЙ САМ':'ПРАКТИКУЕМСЯ';
+  if(shared)$('mission-tag').textContent=s.phase==='finished'?'СЕМЕЙНАЯ ГЛАВА':familyTurn(s.index);
   $('earned').hidden=true;$('defense-button').hidden=true;
   $('solution-button').hidden=!(hintShown&&s.phase==='playing');$('solution-button').textContent='Показать ход';
   $('hint-button').hidden=false;$('hint-button').disabled=!active();$('hint-dots').textContent=hintShown?'●':'○';
@@ -57,9 +60,10 @@ export function createLearningUI({doc,store,animations,blocked,paused,toast,tone
   let title=e.taskTitle||lesson.taskTitle||(e.goal==='check'?'Найди шах':e.goal==='save'?'Спаси короля':'Поставь мат'),text=s.result?.kind==='illegal'?s.result.text:e.prompt,button='';
   if(paused()){title='Немного отдохнём';text='Фигуры подождут.';button='Продолжить';}
   else if(s.phase==='demo'){title=lesson.title;text=e.introduction||lesson.introduction||(e.goal==='check'?'Шах — это нападение на короля. Посмотрим на пример.':e.goal==='save'?'От шаха нужно защититься. Посмотрим на один способ.':'Мат — это шах, от которого нет законной защиты.');button='Покажи пример';}
-  else if(s.phase==='review'){title=s.result.assistance==='independent'?'Ты справился сам!':'Разобрались вместе!';text=s.result.text;button=s.index===s.steps.length-1?'Итог урока':'Следующее задание';}
+  else if(s.phase==='review'){title=!shared&&s.result.assistance==='independent'?'Ты справился сам!':'Разобрались вместе!';text=s.result.text;button=s.index===s.steps.length-1?'Итог урока':'Следующее задание';}
   else if(s.phase==='feedback'){title='Попробуем ещё';text=s.result.text;button='Вернуть позицию';}
   else if(s.phase==='finished'){title='Занятие пройдено!';text=lesson.summary;button='К выбору режима';}
+  if(shared&&s.phase==='finished'){title='Семейная глава пройдена!';text='Спасибо за игру вместе! Участие сохранено отдельно от личных уроков и наград.';}
   if(promotion&&!paused()){title='Кем станет пешка?';text='Выбери новую фигуру. Ход завершится после выбора.';button='';}
   $('message').replaceChildren();const h=doc.createElement('h2'),p=doc.createElement('p');h.textContent=title;p.textContent=text;$('message').append(h,p);
   if(promotion&&!paused()){
@@ -69,9 +73,10 @@ export function createLearningUI({doc,store,animations,blocked,paused,toast,tone
     b.onclick=async()=>{if(promotion!==request||blocked()||paused()||busy)return;promotion=null;await answer(request.value+type);};$('message').append(b);
    }
   }
-  if(!silent&&!lesson.textOnly&&!paused()&&!busy&&!blocked())narrate(title+'. '+text);
+  if(!silent&&!shared&&!lesson.textOnly&&!paused()&&!busy&&!blocked())narrate(title+'. '+text);
   $('primary-button').hidden=!button;$('primary-button').innerHTML=button+' '+icon('arrow');$('primary-button').disabled=busy;
   $('mission-note').textContent=lesson.textOnly?'Здесь учимся с текстовыми подсказками. Можно ошибаться и пробовать снова.':'Можно ошибаться и пробовать снова. Учебные задания не меняют рейтинг.';
+  if(shared)$('mission-note').textContent='Передавайте устройство по очереди. Помогать друг другу можно. Это семейное участие, без личных звёзд и значков.';
   $('board-caption').textContent=busy?'Фигура делает ход…':selected?'Выбери клетку с точкой':s.phase==='demo'?'Сначала посмотрим, затем попробуешь ты':s.phase==='review'?'Посмотри, что изменилось на доске':'Нажми на свою фигуру, затем на клетку';
  }
  async function answer(value){
@@ -83,7 +88,7 @@ export function createLearningUI({doc,store,animations,blocked,paused,toast,tone
     // Sync may finish while a piece is in flight. Judge assistance against the
     // latest facts before giving praise or recording a completed answer.
     const latest=store().get(),id=next.steps[next.index].exerciseId;
-    if(next.phase==='review'&&(latest.seen.includes(id)||latest.achievements[id]?.assisted))next={...next,result:{...next.result,assistance:'assisted'}};
+    if(next.phase==='review'&&(collaborative()||latest.seen.includes(id)||latest.achievements[id]?.assisted))next={...next,result:{...next.result,assistance:'assisted'}};
     lessonState=next;selected=null;busy=false;
     if(next.phase==='review'){
      const e=exercise(),event={eventId:globalThis.crypto?.randomUUID?.()||'lesson-'+Date.now()+'-'+Math.random().toString(36).slice(2),contentVersion:CONTENT_VERSION,lessonId:next.lessonId,exerciseId:e.id,skillId:e.skillId,assistance:next.result.assistance};
@@ -97,7 +102,7 @@ export function createLearningUI({doc,store,animations,blocked,paused,toast,tone
   if(isCurrent())busy=false;
  }
  return {
-  get textOnly(){return !!lessonById(lessonState?.lessonId,seed)?.textOnly;},
+  get textOnly(){return collaborative()||!!lessonById(lessonState?.lessonId,seed)?.textOnly;},
   render,cancel(){gate.cancel();busy=false;if(promotion&&isCurrent()){promotion={...promotion};render(true);}},
   reset(){gate.cancel();busy=false;promotion=null;lessonState=null;progress=store().get();selected=null;},
   refreshProgress(){progress=store().get();if(lessonState&&lessonState.phase!=='finished')protectSeen();},
