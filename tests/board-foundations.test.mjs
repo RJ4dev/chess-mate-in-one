@@ -6,7 +6,7 @@ import {createLearningStore} from '../dist/js/learning-progress.js';
 import {createLearningSync} from '../dist/js/learning-sync.js';
 
 test('board studies use empty or full diagrams, with no fake legal FEN',()=>{
- const pool=exercises.EXERCISES.filter(e=>e.positionKind==='boardStudy');assert.equal(pool.length,12);
+ const pool=exercises.EXERCISES.filter(e=>e.positionKind==='boardStudy'&&e.goal==='square');assert.equal(pool.length,12);
  assert.equal(pool.filter(e=>Object.keys(e.pieces).length===0).length,4);
  for(const e of pool){assert.equal(e.fen,undefined);assert.ok(e.answers.length);assert.ok(e.hint&&e.explanation);assert.equal(e.syncGroup,'board-v1');}
  const queen=pool.find(e=>e.id==='setup-white-queen');assert.equal(Object.keys(queen.pieces).length,32);

@@ -6,9 +6,10 @@ const ids=new Set();
 for(const e of EXERCISES){
  assert(!ids.has(e.id),`Duplicate ${e.id}`);ids.add(e.id);
  if(e.positionKind==='boardStudy'){
-  assert.equal(e.goal,'square');assert.equal(e.fen,undefined);assert.equal(e.syncGroup,'board-v1');assert(e.answers.length>0);
+  assert(['square','placePiece'].includes(e.goal));assert.equal(e.fen,undefined);assert.equal(e.syncGroup,'board-v1');assert(e.answers.length>0);
   for(const [sq,piece] of Object.entries(e.pieces)){assert(/^[a-h][1-8]$/.test(sq));assert(/^[prnbqkPRNBQK]$/.test(piece));}
   for(const square of e.answers){assert(/^[a-h][1-8]$/.test(square));assert.equal(judgeSquare(e,square).correct,true);}
+  if(e.goal==='placePiece'){assert.equal(e.answers.length,1);assert.equal(Object.keys(e.pieces).length,31);assert(/^[prnbqkPRNBQK]$/.test(e.placePiece));assert(!e.pieces[e.answers[0]]);}
   assert(e.prompt&&e.hint&&e.explanation);continue;
  }
  assert.equal(e.positionKind,'legalChess');

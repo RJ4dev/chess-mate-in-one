@@ -33,9 +33,9 @@ export const EXERCISES=seeds.flatMap(([goal,familyId,fen])=>['w','b'].map(color=
 EXERCISES.push(...SAFETY_EXERCISES);
 export const exerciseById=id=>EXERCISES.find(e=>e.id===id);
 export function judgeSquare(exercise,value){
- if(exercise.positionKind!=='boardStudy'||exercise.goal!=='square')throw Error('Unsupported position kind');
- const valid=typeof value==='string'&&/^[a-h][1-8]$/.test(value),correct=valid&&exercise.answers.includes(value);
- return {correct,kind:correct?'correct':valid?'wrong':'illegal',square:valid?value:null,text:correct?exercise.explanation:'Посмотри ещё раз. '+exercise.hint};
+ if(exercise.positionKind!=='boardStudy'||!['square','placePiece'].includes(exercise.goal))throw Error('Unsupported position kind');
+ const valid=typeof value==='string'&&/^[a-h][1-8]$/.test(value),correct=valid&&exercise.answers.includes(value)&&(exercise.goal!=='placePiece'||!exercise.pieces[value]);
+ return {correct,kind:correct?'correct':valid?'wrong':'illegal',square:valid?value:null,...(correct&&exercise.goal==='placePiece'?{piece:exercise.placePiece}:{}),text:correct?exercise.explanation:'Посмотри ещё раз. '+exercise.hint};
 }
 
 export function judgeMove(exercise,value){

@@ -25,6 +25,7 @@ async function complete(page,id){
  for(let i=0;i<answers.length;i++){
   assert.ok(await page.locator('#message p').isVisible(),'Instructions must remain visible in simple UI');
   await answer(page,answers[i]);
+  assert.doesNotMatch(await page.locator('#board-caption').innerText(),/Звёздочка|Нажми на свою/);
   if(id==='piece-safety-2'&&i===1){
    assert.match(await page.locator('[data-square="d3"]').getAttribute('aria-label'),/белый ферзь/);
    assert.match(await page.locator('[data-square="e4"]').getAttribute('aria-label'),/белый конь/);
@@ -36,6 +37,7 @@ async function complete(page,id){
   await primary(page);await phase(page,i===2?'finished':'playing');
  }
  const p=await progress(page);assert.ok(p.completed.includes(id));assert.equal(p.resume,null);
+ assert.doesNotMatch(await page.locator('#board-caption').innerText(),/Звёздочка|Нажми на свою/);
  const names=id==='piece-safety-1'?['safety-rook-b','safety-knight-w','safety-knight-b']:['safety-bishop-b','safety-queen-w','safety-queen-b'];
  assert.equal(p.achievements[names[0]].assisted,true);
  assert.equal(p.achievements[names[1]].independent,true);assert.equal(p.achievements[names[2]].independent,true);
