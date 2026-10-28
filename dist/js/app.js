@@ -1,3 +1,4 @@
+import {recommendLesson} from './learning-route.js';
 import {chooseComputerMove} from './computer.js';
 import {createLocalPartyUI} from './local-party-ui.js';
 import {Chess,evaluateMove} from './chess.js';
@@ -84,7 +85,12 @@ function showHome(view='modes'){
  renderHome();updateProfile();$('mode-title').focus({preventScroll:true});
 }
 function renderHome(){
- const p=learningStore().get(),cards=$('mode-cards');
+ const p=learningStore().get(),cards=$('mode-cards'),suggestion=recommendLesson(p);
+ $('learning-next').hidden=!['lessons','quest'].includes(homeView);
+ const nextLesson=lessonById(suggestion.lessonId,suggestion.resume?.seed);
+ $('learning-next-button').textContent=(suggestion.kind==='continue'?'Продолжим: ':suggestion.kind==='review'?'Повторим: ':'Попробуем: ')+nextLesson.title;
+ $('learning-next-reason').textContent=({continue:'Продолжи с сохранённого шага на этом устройстве.',practice:'Продолжим практику: здесь другие позиции той же темы.',next:'Короткое занятие без спешки. Остальные главы тоже доступны.',review:'Все главы отмечены пройденными. Можно спокойно повторить знакомую тему.'})[suggestion.kind];
+ $('learning-next-button').onclick=()=>{const next=recommendLesson(learningStore().get());startLearning(next.lessonId,next.resume);};
  $('mode-home').dataset.view=homeView;
  $('mode-title').textContent=homeView==='quest'?'Карта приключения':homeView==='lessons'?'Учимся шахматам':homeView==='practice'?'Выбери мини-игру':'Во что сыграем?';
  $('home-copy').textContent=homeView==='lessons'?'Начни с ходов фигур или выбери уже знакомую тему':homeView==='quest'?'Любую главу можно повторить':'Короткие задания без спешки';
