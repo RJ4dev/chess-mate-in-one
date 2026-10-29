@@ -16,8 +16,17 @@ async function board(page,count){
 async function open(page,part){
  await page.locator('.brand').click();await page.locator('#choose-learning').click();await page.locator(`[data-lesson="${ids[part]}"]`).click();await phase(page,'demo');
  await board(page,part*4);
- const top=await page.locator('[data-square="a8"]').boundingBox(),bottom=await page.locator('[data-square="a1"]').boundingBox(),right=await page.locator('[data-square="h8"]').boundingBox();
- assert.ok(top.y<bottom.y&&top.x<right.x,'white stays below black; a-file left on screen');
+ // A lesson phase is synchronous; ResizeObserver fits its board on the next
+ // animation frame. Read all squares atomically after nonzero layout is ready.
+ await page.waitForFunction(()=>{
+  const rect=sq=>document.querySelector(`#board [data-square="${sq}"]`).getBoundingClientRect();
+  const top=rect('a8'),bottom=rect('a1'),right=rect('h8');
+  return [top,bottom,right].every(r=>r.width>0&&r.height>0)&&top.y<bottom.y&&top.x<right.x;
+ },undefined,{timeout:15000});
+ const geometry=await page.evaluate(()=>Object.fromEntries(['a8','a1','h8'].map(sq=>{
+  const r=document.querySelector(`#board [data-square="${sq}"]`).getBoundingClientRect();return [sq,{x:r.x,y:r.y,width:r.width,height:r.height}];
+ })));
+ assert.ok(geometry.a8.y<geometry.a1.y&&geometry.a8.x<geometry.h8.x,JSON.stringify(geometry));
  assert.ok(await page.locator('.placement-sample svg').isVisible());
  assert.match(await page.locator('#board-caption').innerText(),/Покажи пример/);
 }
