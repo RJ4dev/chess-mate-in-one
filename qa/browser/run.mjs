@@ -12,6 +12,7 @@ import {boardPlacementAcceptance} from './board-placement.mjs';
 import {whiteBackRankAcceptance} from './white-back-rank.mjs';
 import {whitePawnsAcceptance} from './white-pawns.mjs';
 import {blackBackRankAcceptance} from './black-back-rank.mjs';
+import {blackPawnsAcceptance} from './black-pawns.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const resultsDir = fileURLToPath(new URL('./results/', import.meta.url));
@@ -348,6 +349,7 @@ try {
     await whiteBackRankAcceptance({origin, entry, scenario, login});
     await whitePawnsAcceptance({origin, entry, scenario, login});
     await blackBackRankAcceptance({origin, entry, scenario, login});
+    await blackPawnsAcceptance({origin, entry, scenario, login});
   }
   report.status = 'passed';
 } catch (error) {

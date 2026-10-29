@@ -25,6 +25,19 @@ test('black prefix and help survive durable reload and given white pieces grant 
  assert.ok(Object.keys(fresh.get().achievements).every(id=>!id.startsWith('build-white-')&&!id.startsWith('build-pawn-')));
  assert.equal(fresh.get().achievements['build-black-rook-left'],undefined);
 });
+test('black-pawn prefix and help restore durably and given pieces grant no skipped achievements',async()=>{
+ const map=new Map(),storage={getItem:k=>map.get(k),setItem:(k,v)=>map.set(k,v)};
+ let store=createLearningStore(storage),ui=controller(()=>store);
+ const count=()=>((ui.nodes.get('board').innerHTML||'').match(/has-piece/g)||[]).length;
+ ui.start('board-build-black-pawns-1');assert.equal(count(),24);ui.primary();ui.primary();await ui.square('b7');ui.primary();assert.equal(count(),26);
+ ui.hint();ui.cancel();store=createLearningStore(storage);ui=controller(()=>store);ui.start('board-build-black-pawns-1',store.get().resume);
+ assert.equal(count(),26);await ui.square('c7');assert.deepEqual(store.get().achievements['build-blackpawn-c'],{assisted:true,independent:false});
+ ui.primary();await ui.square('d7');ui.primary();assert.equal(count(),28);
+ const fresh=createLearningStore(null);ui=controller(()=>fresh);ui.start('board-build-black-pawns-2');assert.equal(count(),28);
+ ui.primary();ui.primary();await ui.square('f7');ui.primary();await ui.square('g7');ui.primary();await ui.square('h7');ui.primary();assert.equal(count(),32);
+ assert.ok(fresh.get().completed.includes('board-build-black-pawns-2'));assert.ok(!fresh.get().completed.includes('board-build-black-pawns-1'));
+ assert.equal(fresh.get().achievements['build-blackpawn-a'],undefined);assert.ok(Object.keys(fresh.get().achievements).every(id=>!/^(build-white-|build-pawn-|build-black-)/.test(id)));
+});
 test('pawn prefix and help restore durably while direct later entry grants no skipped lessons',async()=>{
  const map=new Map(),storage={getItem:k=>map.get(k),setItem:(k,v)=>map.set(k,v)};
  let store=createLearningStore(storage),ui=controller(()=>store);

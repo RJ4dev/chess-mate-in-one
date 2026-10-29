@@ -59,3 +59,11 @@ const whiteSide=Object.fromEntries([...whiteBackRank.map(([,sq,piece])=>[sq,piec
 BOARD_EXERCISES.push(...blackBackRank.map(([name,square,placePiece,taskTitle,prompt,hint],i)=>({
  ...make('build-black-'+name,{...whiteSide,...Object.fromEntries(blackBackRank.slice(0,i).map(([,sq,piece])=>[sq,piece]))},[square],taskTitle,prompt,hint,i===7?'Верхний ряд чёрных собран. Чёрные пешки и самостоятельная сборка всей доски ещё впереди.':'Чёрная фигура на месте. Постепенно собираем верхний ряд.'),goal:'placePiece',placePiece
 })));
+const blackPawnNeighbours=['ладьёй слева на экране','конём слева на экране','слоном слева на экране','чёрным ферзём','чёрным королём','слоном справа на экране','конём справа на экране','ладьёй справа на экране'];
+const bothBackRanks={...whiteSide,...Object.fromEntries(blackBackRank.map(([,sq,piece])=>[sq,piece]))};
+BOARD_EXERCISES.push(...[...'abcdefgh'].map((file,i)=>{
+ const square=file+'7',intro=i===0?'Здесь уже стоят 24 фигуры. Белые снизу, чёрные сверху. Добавим чёрных пешек. ':i===4?'Здесь уже стоят 24 фигуры и четыре чёрные пешки. Добавим остальные четыре. ':'';
+ const prompt=intro+`Поставь чёрную пешку перед ${blackPawnNeighbours[i]}, на второй ряд сверху.`;
+ const pieces={...bothBackRanks,...Object.fromEntries([...'abcdefgh'].slice(0,i).map(f=>[f+'7','p']))};
+ return {...make('build-blackpawn-'+file,pieces,[square],`Пешка перед ${blackPawnNeighbours[i]}`,prompt,`Чёрные сверху. Их пешки стоят на седьмом ряду, перед фигурами. Сейчас нужна клетка ${square}.`,i===7?'Все восемь чёрных пешек на месте. Начальная позиция заполнена с показом и практикой; самостоятельную сборку с пустой доски ещё потренируем.':'Чёрная пешка на месте. Постепенно заполняем второй ряд сверху.'),goal:'placePiece',placePiece:'p'};
+}));

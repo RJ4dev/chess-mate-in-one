@@ -5,7 +5,7 @@ import {parentProgress} from '../dist/js/parent-progress.js';
 test('completion alone never claims independent solutions or help',()=>{
  const value={version:1,completed:['check','check','unknown'],achievements:{}};
  const before=structuredClone(value),report=parentProgress(value),check=report.lessons.find(l=>l.id==='check');
- assert.equal(report.completed,1);assert.equal(report.total,34);
+ assert.equal(report.completed,1);assert.equal(report.total,36);
  assert.deepEqual([check.completed,check.independent,check.assisted,check.total],[true,0,0,3]);
  assert.deepEqual(value,before);
 });
