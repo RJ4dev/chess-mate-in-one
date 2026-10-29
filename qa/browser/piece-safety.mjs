@@ -80,7 +80,7 @@ export async function pieceSafetyAcceptance({origin,entry,scenario,login}){
   await open(page,'piece-safety-2');await demo(page);await answer(page,'f6g7');await primary(page);await phase(page,'playing');
   const before=await progress(page);await move(page,'f2e4');
   const held=await page.evaluate(()=>{
-   window.__qaRescueAnimations=document.getAnimations().filter(a=>a.effect.getTiming().duration===1100);
+   window.__qaRescueAnimations=[...document.querySelectorAll('[data-move-flight]')].flatMap(node=>node.getAnimations());
    window.__qaRescueAnimations.forEach(a=>a.pause());return window.__qaRescueAnimations.length;
   });assert.equal(held,1,'A real move animation must be pending before cancellation');
   await login(page,'b');await page.waitForTimeout(200);
