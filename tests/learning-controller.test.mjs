@@ -11,6 +11,28 @@ function controller(store,animations={move:async()=>{}},narrate=()=>{},voiceEnab
  const ui=createLearningUI({doc,store,animations,blocked:()=>false,paused:()=>false,toast(){},tone(){},home(){},narrate,voiceEnabled,isCurrent,collaborative});
  return Object.assign(ui,{nodes});
 }
+test('back rank prefix and assistance survive a real reload and direct later entry grants no skipped facts',async()=>{
+ const map=new Map(),storage={getItem:k=>map.get(k),setItem:(k,v)=>map.set(k,v)};
+ let store=createLearningStore(storage),ui=controller(()=>store);
+ const count=()=>((ui.nodes.get('board').innerHTML||'').match(/has-piece/g)||[]).length;
+ ui.start('board-build-white-1');assert.equal(count(),0);ui.primary();assert.equal(count(),1);ui.primary();
+ await ui.square('h1');ui.primary();assert.equal(count(),2);ui.hint();ui.cancel();
+ store=createLearningStore(storage);ui=controller(()=>store);ui.start('board-build-white-1',store.get().resume);assert.equal(count(),2);
+ await ui.square('b1');assert.equal(count(),3);assert.deepEqual(store.get().achievements['build-white-knight-left'],{assisted:true,independent:false});
+ ui.primary();await ui.square('g1');ui.primary();assert.equal(count(),4);
+ assert.doesNotMatch(ui.nodes.get('board-caption').textContent,/полную расстановку/);
+ const fresh=createLearningStore(null);ui=controller(()=>fresh);ui.start('board-build-white-2');assert.equal(count(),4);
+ ui.primary();ui.primary();await ui.square('f1');ui.primary();await ui.square('d1');ui.primary();await ui.square('e1');ui.primary();assert.equal(count(),8);
+ assert.ok(fresh.get().completed.includes('board-build-white-2'));assert.ok(!fresh.get().completed.includes('board-build-white-1'));
+ assert.equal(fresh.get().achievements['build-white-rook-left'],undefined);
+});
+test('placement captions name enabled actions in demo and feedback',async()=>{
+ const ui=controller(()=>createLearningStore(null));ui.start('board-placement');
+ assert.match(ui.nodes.get('board-caption').textContent,/Покажи пример/);
+ ui.primary();ui.primary();await ui.square('d8');
+ assert.match(ui.nodes.get('board-caption').textContent,/Попробовать снова/);
+ ui.primary();assert.match(ui.nodes.get('board-caption').textContent,/Нажми на пустое/);
+});
 test('placement adds a visible requested piece only on success and help survives durable reload',async()=>{
  const map=new Map(),storage={getItem:k=>map.get(k),setItem:(k,v)=>map.set(k,v)};
  let store=createLearningStore(storage),ui=controller(()=>store);
