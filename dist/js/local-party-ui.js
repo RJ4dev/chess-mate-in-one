@@ -1,7 +1,7 @@
 import {createLocalParty} from './local-party.js';
 import {pieceSvg,pieceNames} from './pieces.js';
 const KEY='mate-local-party-v1';
-export function createLocalPartyUI({doc,getStorage,blocked,paused,toast,isCurrent=()=>true,opponent=null,storageKey=KEY,animations=null}){
+export function createLocalPartyUI({doc,getStorage,blocked,paused,toast,isCurrent=()=>true,opponent=null,opponentName=()=>'Ученик',storageKey=KEY,animations=null}){
  const $=id=>doc.getElementById(id);let game=createLocalParty(),selected=null,promotion=null,focus='a1',epoch=0,thinking=false,failed=false,animating=false;
  const active=()=>!animating&&!thinking&&!blocked()&&!paused()&&game.status().kind==='playing'&&(!opponent||game.turn()==='w');
  function save(){try{getStorage().setItem(storageKey,JSON.stringify(game.snapshot()));}catch{toast('Партия сохранится только до выхода из режима.');}}
@@ -36,7 +36,7 @@ export function createLocalPartyUI({doc,getStorage,blocked,paused,toast,isCurren
    html+=`<button class="square ${(file+rank)%2?'dark':''} ${p?'has-piece':''} ${square===selected?'selected':''} ${square===lastFrom?'last-move last-from':square===lastTo?'last-move last-to':''} ${(status.check||status.kind==='mate')&&p?.type==='k'&&p.color===game.turn()?'king-check':''} ${legal.some(m=>m.to===square)?'target':''}" data-square="${square}" aria-label="${square}, ${p?color+' '+pieceNames[p.type]:'пустая клетка'}" aria-pressed="${square===selected}" tabindex="${square===focus?0:-1}">${p?pieceSvg(p.type,p.color):''}${file===0?`<span class="coordinate rank-label">${rank}</span>`:''}${rank===1?`<span class="coordinate file-label">${String.fromCharCode(97+file)}</span>`:''}</button>`;
   }
   $('board').innerHTML=html;$('board').classList.toggle('paused-board',paused());if(restore)$('board').querySelector(`[data-square="${restore}"]`)?.focus({preventScroll:true});
-  $('board-label').textContent=game.turn()==='w'?'Ход белых':'Ход чёрных';$('motif').textContent=opponent?'Простой компьютер':'Партия вдвоём';$('round-label').textContent=(opponent?'КОМПЬЮТЕР · ':'ДВА ИГРОКА · ')+game.snapshot().moves.length+' ПОЛУХОДОВ';
+  $('board-label').textContent=game.turn()==='w'?'Ход белых':'Ход чёрных';$('motif').textContent=opponent?opponentName():'Партия вдвоём';$('round-label').textContent=(opponent?'КОМПЬЮТЕР · ':'ДВА ИГРОКА · ')+game.snapshot().moves.length+' ПОЛУХОДОВ';
   $('steps').innerHTML='';$('steps').setAttribute('aria-label','Свободная партия');$('hearts').textContent='♔';$('hearts').setAttribute('aria-label','Без сердечек и рейтинга');
   for(const id of ['earned','defense-button','training-button','solution-button','hint-button','hint-text','repeat-voice'])$(id).hidden=true;
   $('pause-button').disabled=status.kind!=='playing';$('mission-tag').textContent='ИГРАЕМ ПО ОЧЕРЕДИ';
@@ -52,7 +52,7 @@ export function createLocalPartyUI({doc,getStorage,blocked,paused,toast,isCurren
    for(const [type,name] of [['q','Ферзь'],['r','Ладья'],['b','Слон'],['n','Конь']]){const b=doc.createElement('button');b.textContent=name;b.className='secondary-button';b.dataset.promotion=type;b.onclick=()=>{if(promotion===request&&active())commit(request.value+type);};$('message').append(b);}
   }
   $('primary-button').hidden=status.kind==='playing'&&!failed;$('primary-button').disabled=false;$('primary-button').textContent=failed?'Повторить ход':'Новая партия';
-  $('mission-note').textContent=(opponent?'Ты играешь белыми против простого компьютера. ':'')+'Партия сохраняется на этом устройстве для текущего профиля. Звёзды и рейтинг не меняются.';
+  $('mission-note').textContent=(opponent?'Ты играешь белыми. Уровень: '+opponentName()+'. ':'')+'Партия сохраняется на этом устройстве для текущего профиля. Звёзды и рейтинг не меняются.';
   $('board-caption').textContent=promotion?'Выбери фигуру в панели':last?`Последний ход: ${lastFrom} → ${lastTo}`:status.kind==='playing'?'Белые и чёрные играют по очереди':'Партия завершена';
   if(!skipThink)think();
  }

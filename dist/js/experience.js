@@ -1,3 +1,4 @@
+import {normalizeComputerLevel} from './computer.js';
 const key='mate-in-one-experience-v1';
 export const APPEARANCES=[
  {id:'garden',name:'Сад',paper:'#f7f6ef',light:'#eaf0d6',dark:'#85a58a',frame:'#e2d7bc',green:'#4e7962',greenDark:'#355c49'},
@@ -5,10 +6,10 @@ export const APPEARANCES=[
  {id:'sand',name:'Песок',paper:'#faf4e8',light:'#f5e9d1',dark:'#bea47e',frame:'#e3ccab',green:'#795b37',greenDark:'#604626'}
 ];
 export const COMPANIONS=[{id:'knight',name:'Конь Искра',piece:'n'},{id:'rook',name:'Ладья Башенка',piece:'r'},{id:'pawn',name:'Пешка Лучик',piece:'p'}];
-const defaults=()=>({detailed:false,sound:false,effects:true,appearance:'garden',companion:'knight',moveAnimation:true,moveSpeed:4});
+const defaults=()=>({detailed:false,sound:false,effects:true,appearance:'garden',companion:'knight',moveAnimation:true,moveSpeed:4,computerLevel:'student'});
 function normalize(p){
  if(!p||!['detailed','sound','effects'].every(k=>typeof p[k]==='boolean'))return defaults();
- return {detailed:p.detailed,sound:p.sound,effects:p.effects,moveAnimation:typeof p.moveAnimation==='boolean'?p.moveAnimation:true,moveSpeed:[2,4,8].includes(p.moveSpeed)?p.moveSpeed:4,
+ return {computerLevel:normalizeComputerLevel(p.computerLevel),detailed:p.detailed,sound:p.sound,effects:p.effects,moveAnimation:typeof p.moveAnimation==='boolean'?p.moveAnimation:true,moveSpeed:[2,4,8].includes(p.moveSpeed)?p.moveSpeed:4,
   appearance:APPEARANCES.some(a=>a.id===p.appearance)?p.appearance:'garden',
   companion:COMPANIONS.some(c=>c.id===p.companion)?p.companion:'knight'};
 }

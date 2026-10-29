@@ -2,7 +2,7 @@ import {parentProgress} from './parent-progress.js';
 import {learningBadges} from './learning-badges.js';
 import {createFamilyStore} from './family.js';
 import {recommendLesson} from './learning-route.js';
-import {chooseComputerMove} from './computer.js';
+import {chooseComputerMove,COMPUTER_LEVELS} from './computer.js';
 import {createLocalPartyUI} from './local-party-ui.js';
 import {Chess,evaluateMove} from './chess.js';
 import {PUZZLES} from './puzzles.js';
@@ -54,6 +54,7 @@ function applyExperience(){
  const appearance=APPEARANCES.find(a=>a.id===experience.appearance),companion=COMPANIONS.find(c=>c.id===experience.companion);
  document.body.dataset.appearance=appearance.id;
  for(const [variable,value] of Object.entries({'--paper':appearance.paper,'--board-light':appearance.light,'--board-dark':appearance.dark,'--board-frame':appearance.frame,'--green':appearance.green,'--green-dark':appearance.greenDark}))document.body.style.setProperty(variable,value);
+ $('computer-level').value=experience.computerLevel;$('computer-description').textContent=COMPUTER_LEVELS.find(l=>l.id===experience.computerLevel).name+' · ты играешь белыми';
  $('move-speed').value=String(experience.moveSpeed);$('move-animation-button').textContent='Движение фигур: '+(experience.moveAnimation?'вкл':'выкл');$('move-animation-button').setAttribute('aria-pressed',String(experience.moveAnimation));
  $('appearance-choice').value=appearance.id;$('companion-choice').value=companion.id;
  $('home-companion-icon').innerHTML=pieceSvg(companion.piece,'w');$('home-companion-name').textContent=companion.name;
@@ -83,7 +84,7 @@ const familyStores=new Map();
 function familyStore(){const id=session?.player.id||'';if(!familyStores.has(id))familyStores.set(id,createFamilyStore(scopedStorage));return familyStores.get(id);}
 let learningSync;
 const localParty=createLocalPartyUI({doc:document,getStorage:()=>scopedStorage,isCurrent:()=>mode==='local',blocked:()=>mode!=='local'||overlayOpen()||document.hidden,paused:()=>paused,toast,animations});
-const computerParty=createLocalPartyUI({doc:document,getStorage:()=>scopedStorage,isCurrent:()=>mode==='computer',blocked:()=>mode!=='computer'||overlayOpen()||document.hidden,paused:()=>paused,toast,opponent:chooseComputerMove,storageKey:'mate-computer-party-v1',animations});
+const computerParty=createLocalPartyUI({doc:document,getStorage:()=>scopedStorage,isCurrent:()=>mode==='computer',blocked:()=>mode!=='computer'||overlayOpen()||document.hidden,paused:()=>paused,toast,opponent:(fen,options)=>chooseComputerMove(fen,{...options,level:experience.computerLevel}),opponentName:()=>COMPUTER_LEVELS.find(l=>l.id===experience.computerLevel).name,storageKey:'mate-computer-party-v1',animations});
 const learning=createLearningUI({doc:document,store:()=>familyActive?familyStore():learningStore(),animations,blocked:()=>mode!=='learn'||overlayOpen()||document.hidden,paused:()=>paused,toast,tone,home:()=>showHome(),narrate:text=>coach.say(text),voiceEnabled:()=>coach.enabled,isCurrent:()=>mode==='learn',collaborative:()=>familyActive,confirmSetupRestart,onProgress:()=>{if(!familyActive)void learningSync?.run();}});
 learningSync=createLearningSync({getSession:()=>session,getStore:learningStore,client:ranking,onChange:()=>updateLearningStatus(),onMerged:()=>{learning.refreshProgress();if(mode==='home')renderHome();}});
 let homeView='modes';
@@ -421,6 +422,7 @@ $('view-button').onclick=()=>{cancelAction();experience.detailed=!experience.det
 $('sound-button').onclick=()=>{experience.sound=!experience.sound;if(experience.sound)tone('select');else sounds.mute();applyExperience();if(!saveExperience(storage,experience))toast('Настройка звука изменена только на этот сеанс.');};
 $('effects-button').onclick=()=>{cancelAction();experience.effects=!experience.effects;if(!experience.effects){clearTimeout(effectTimer);$('celebration').replaceChildren();document.querySelector('.board-frame').classList.remove('happy-board','try-board');}applyExperience();if(!saveExperience(storage,experience))toast('Настройка эффектов изменена только на этот сеанс.');};
 $('move-animation-button').onclick=()=>{cancelAction();experience.moveAnimation=!experience.moveAnimation;applyExperience();if(!saveExperience(storage,experience))toast('Настройка движения изменена только на этот сеанс.');};
+$('computer-level').onchange=event=>{const level=event.target.value;if(!COMPUTER_LEVELS.some(l=>l.id===level))return;cancelAction();experience.computerLevel=level;applyExperience();if(!saveExperience(storage,experience))toast('Уровень изменён только на этот сеанс.');};
 $('move-speed').onchange=event=>{const speed=Number(event.target.value);if(![2,4,8].includes(speed))return;cancelAction();experience.moveSpeed=speed;applyExperience();if(!saveExperience(storage,experience))toast('Скорость изменена только на этот сеанс.');};
 $('appearance-choice').onchange=event=>{const id=event.target.value;if(!APPEARANCES.some(a=>a.id===id))return;experience.appearance=id;applyExperience();$('appearance-status').textContent=saveExperience(storage,experience)?'Оформление сохранено в этом браузере.':'Оформление изменено только на этот сеанс.';};
 $('companion-choice').onchange=event=>{const id=event.target.value;if(!COMPANIONS.some(c=>c.id===id))return;experience.companion=id;applyExperience();$('appearance-status').textContent=saveExperience(storage,experience)?'Спутник сохранён в этом браузере. Голос помощника прежний.':'Спутник изменён только на этот сеанс.';};
