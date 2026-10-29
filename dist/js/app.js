@@ -49,12 +49,13 @@ function queueScore(){
 }
 
 function tone(kind){if(experience.sound&&!document.hidden)sounds.play(kind);}
+function updateComputerDescription(){const label=$('computer-description');if(label)label.textContent=COMPUTER_LEVELS.find(l=>l.id===experience.computerLevel).name+' · ты играешь белыми';}
 function applyExperience(){
  document.body.classList.toggle('simple-ui',!experience.detailed);document.body.classList.toggle('effects-off',!experience.effects);
  const appearance=APPEARANCES.find(a=>a.id===experience.appearance),companion=COMPANIONS.find(c=>c.id===experience.companion);
  document.body.dataset.appearance=appearance.id;
  for(const [variable,value] of Object.entries({'--paper':appearance.paper,'--board-light':appearance.light,'--board-dark':appearance.dark,'--board-frame':appearance.frame,'--green':appearance.green,'--green-dark':appearance.greenDark}))document.body.style.setProperty(variable,value);
- $('computer-level').value=experience.computerLevel;$('computer-description').textContent=COMPUTER_LEVELS.find(l=>l.id===experience.computerLevel).name+' · ты играешь белыми';
+ $('computer-level').value=experience.computerLevel;updateComputerDescription();
  $('move-speed').value=String(experience.moveSpeed);$('move-animation-button').textContent='Движение фигур: '+(experience.moveAnimation?'вкл':'выкл');$('move-animation-button').setAttribute('aria-pressed',String(experience.moveAnimation));
  $('appearance-choice').value=appearance.id;$('companion-choice').value=companion.id;
  $('home-companion-icon').innerHTML=pieceSvg(companion.piece,'w');$('home-companion-name').textContent=companion.name;
@@ -115,7 +116,7 @@ function renderHome(){
  if(p.resume)$('continue-learning').textContent='Продолжить: '+lessonById(p.resume.lessonId,p.resume.seed).title;
  updateLearningStatus();
  if(homeView==='modes'){
-  cards.innerHTML=originalModeCards;
+  cards.innerHTML=originalModeCards;updateComputerDescription();
   $('choose-family').onclick=showFamily;
   $('choose-computer').onclick=()=>{cancelAction();clock.pause();closeMenu(false);closeModal();leaveHome();mode='computer';paused=false;document.body.classList.add('is-learning');computerParty.start();updateProfile();};
   $('choose-local').onclick=()=>{cancelAction();clock.pause();closeMenu(false);closeModal();leaveHome();mode='local';paused=false;document.body.classList.add('is-learning');localParty.start();updateProfile();};
