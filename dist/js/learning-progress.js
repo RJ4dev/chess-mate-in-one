@@ -25,6 +25,10 @@ export function rememberHelp(progress,exerciseId){
 }
 export function mergeLearning(a,b){
  const left=normalizeLearning(a),right=normalizeLearning(b);
+ // Persist newly learned assistance in the active device draft before any
+ // network ACK/UI callback. Historical assistance before a fresh attempt is
+ // already on the left and does not taint that intentionally new attempt.
+ if(left.resume?.lessonId===SETUP_LESSON&&right.achievements['assemble-initial']?.assisted&&!left.achievements['assemble-initial']?.assisted)left.resume.setup.assisted=true;
  for(const [id,result] of Object.entries(right.achievements)){const old=left.achievements[id]||{};left.achievements[id]={assisted:!!(old.assisted||result.assisted),independent:!!(old.independent||result.independent)};}
  left.completed=LESSONS.filter(l=>left.completed.includes(l.id)||right.completed.includes(l.id)).map(l=>l.id);
  // Resume is local to this device. Remote achievements never overwrite it.

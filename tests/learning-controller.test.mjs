@@ -278,3 +278,22 @@ test('remote assistance during an unfinished assembly is saved before an immedia
  store.save(recordLearning(store.get(),{eventId:'remote-setup-help',contentVersion:1,lessonId:'board-assemble',exerciseId:'assemble-initial',skillId:'starting-position',assistance:'assisted'}));ui.refreshProgress();
  assert.equal(createLearningStore(storage).get().resume.setup.assisted,true);
 });
+test('remote assistance is durable before failed or still-pending event ACK, including reload before any UI callback',async()=>{
+ const {createLearningSync}=await import('../dist/js/learning-sync.js');const {setupOrder,INITIAL_SETUP}=await import('../dist/js/setup-challenge.js');
+ for(const pending of [false,true]){
+  const map=new Map(),storage={getItem:k=>map.get(k),setItem:(k,v)=>map.set(k,v)};
+  let store=createLearningStore(storage),ui=controller(()=>store);ui.start('board-assemble');
+  const first=store.get().resume;await ui.square(Object.keys(INITIAL_SETUP).find(sq=>INITIAL_SETUP[sq]===setupOrder(first.seed)[0]));
+  let release,started;const waiting=new Promise(r=>release=r),atAck=new Promise(r=>started=r);
+  const worker=createLearningSync({getSession:()=>({player:{id:'fixture'},token:'fixture-only'}),getStore:()=>store,client:{async request(route,data){
+   if(route==='/capabilities')return{learning:{enabled:true,contentVersion:1,contentGroups:['setup-v1']}};
+   if(route==='/learning')return{learning:{version:1,achievements:{'assemble-initial':{assisted:true,independent:false}}}};
+   started();if(pending){await waiting;return{learning:{version:1},accepted:data.events.map(e=>e.eventId)};}throw Error('fixture ACK failure');
+  }}});
+  const run=worker.run();await atAck;if(!pending)await run;
+  assert.equal(createLearningStore(storage).get().resume.setup.assisted,true);
+  worker.cancel();release();await run;store=createLearningStore(storage);ui=controller(()=>store);ui.start('board-assemble',store.get().resume);
+  while(store.get().resume){const r=store.get().resume;await ui.square(Object.keys(INITIAL_SETUP).find(sq=>INITIAL_SETUP[sq]===setupOrder(r.seed)[r.setup.squares.length]&&!r.setup.squares.includes(sq)));}
+  assert.deepEqual(store.get().achievements['assemble-initial'],{assisted:true,independent:false});
+ }
+});

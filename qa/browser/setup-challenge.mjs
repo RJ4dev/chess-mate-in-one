@@ -58,7 +58,11 @@ export async function setupChallengeAcceptance({origin,entry,scenario,login}){
   await page.setViewportSize({width:320,height:700});await open(page);const pieces={};await place(page,pieces,true);const p=await saved(page);
   await page.locator('#pause-button').click();await page.locator('[data-square="d4"]').press('Enter');assert.deepEqual(await saved(page),p);
   await page.locator('#pause-button').click();await place(page,pieces,true);await page.locator('#primary-button').click();await resume(page);await board(page,pieces);
-  const b=await page.locator('#board').boundingBox();assert.ok(b.width>=160&&b.x>=0&&b.x+b.width<=321);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  // Resuming changes mission height; ResizeObserver fits the board next frame.
+  // Require the same geometry after layout, rather than sampling its first frame.
+  try{await page.waitForFunction(()=>{const b=document.querySelector('#board').getBoundingClientRect();return b.width>=160&&b.x>=0&&b.right<=321&&document.documentElement.scrollWidth<=innerWidth;},undefined,{timeout:15000});}
+  catch(error){const geometry=await page.evaluate(()=>({board:document.querySelector('#board').getBoundingClientRect().toJSON(),viewport:{width:innerWidth,height:innerHeight},scrollWidth:document.documentElement.scrollWidth,mission:document.querySelector('.mission-card').getBoundingClientRect().toJSON()}));throw Error('Assembly layout: '+JSON.stringify(geometry),{cause:error});}
+  const b=await page.locator('#board').boundingBox();assert.ok(b.width>=160&&b.x>=0&&b.x+b.width<=321,JSON.stringify(b));assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
  },options);
 
  await scenario(origin,entry,'assembly: explicit restart clears only the current attempt, new clean attempt can be independent',async page=>{
