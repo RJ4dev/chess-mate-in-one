@@ -8,6 +8,7 @@ async function open(page){
  await page.locator('.brand').click();await page.locator('#choose-learning').click();await page.locator('[data-lesson="board-placement"]').click();await phase(page,'demo');
  assert.ok(await page.locator('.placement-sample svg').isVisible());assert.ok(await page.locator('#message p').isVisible());
  assert.equal(await page.locator('#board .has-piece').count(),31);
+ assert.match(await page.locator('#board-caption').innerText(),/Покажи пример/);
 }
 async function answer(page,square,keyboard=false){
  const node=page.locator(`#board [data-square="${square}"]`);
@@ -36,6 +37,7 @@ export async function boardPlacementAcceptance({origin,entry,scenario,login}){
  await scenario(origin,entry,'placement: visible sample, occupied-square error, retry and completion',async page=>{
   await open(page);await demo(page);const before=await page.locator('#board [data-square]').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('aria-label')));
   await page.locator('[data-square="d8"]').click();await phase(page,'feedback');
+  assert.match(await page.locator('#board-caption').innerText(),/Попробовать снова/);
   assert.equal(await page.locator('#board .has-piece').count(),31);
   assert.match(await page.locator('[data-square="d8"]').getAttribute('aria-label'),/чёрный ферзь/);
   assert.equal((await saved(page)).achievements['place-black-knight'],undefined);
