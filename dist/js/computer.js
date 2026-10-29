@@ -9,9 +9,10 @@ export const normalizeComputerLevel=level=>COMPUTER_LEVELS.some(l=>l.id===level)
 const values={p:100,n:300,b:320,r:500,q:900,k:0},MATE=100000;
 function hash(value){let n=2166136261;for(const ch of String(value)){n^=ch.charCodeAt(0);n=Math.imul(n,16777619);}return n>>>0;}
 const order=moves=>moves.sort((a,b)=>((values[b.captured]||0)*10-(values[b.piece]||0)+(b.promotion?800:0))-((values[a.captured]||0)*10-(values[a.piece]||0)+(a.promotion?800:0))||uci(a).localeCompare(uci(b)));
-function evaluate(c){let total=0;for(const p of c.board().flat())if(p){const x=p.square.charCodeAt(0)-97,y=Number(p.square[1])-1,center=7-Math.abs(3.5-x)-Math.abs(3.5-y),advance=p.color==='w'?y:7-y;
+function evaluate(c,noticeThreats=false){let total=0;for(const p of c.board().flat())if(p){const x=p.square.charCodeAt(0)-97,y=Number(p.square[1])-1,center=7-Math.abs(3.5-x)-Math.abs(3.5-y),advance=p.color==='w'?y:7-y;
  const activity=p.type==='p'?advance*4:p.type==='n'||p.type==='b'?center*8:0;
- total+=(p.color===c.turn()?1:-1)*(values[p.type]+activity);
+ const threat=noticeThreats&&p.type!=='k'&&c.isAttacked(p.square,p.color==='w'?'b':'w')&&!c.isAttacked(p.square,p.color)?values[p.type]/3:0;
+ total+=(p.color===c.turn()?1:-1)*(values[p.type]+activity-threat);
  }return total;}
 // Same seed + FEN + level => same work and result. No API, worker or engine download.
 // Only legal chess.js moves are considered; the UI owns repetition history and animation.
@@ -37,7 +38,7 @@ export async function chooseComputerMove(fen,{level='student',seed=0,stats={},is
   if(drawn())return 0;
   const inCheck=c.isCheck();
   if(depth<=0){
-   if(!quiet)return evaluate(c);
+   if(!quiet)return evaluate(c,config.id==='student');
    const stand=evaluate(c);if(!inCheck){if(stand>=beta)return stand;alpha=Math.max(alpha,stand);}
    const tactical=inCheck?legal:legal.filter(m=>m.captured||m.promotion);
    if(!tactical.length)return stand;

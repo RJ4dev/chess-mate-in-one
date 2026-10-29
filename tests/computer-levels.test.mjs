@@ -42,3 +42,6 @@ test('node exhaustion retains the last complete iteration and cancellation insid
  const c=new Chess();c.move('e4');const stats={};const m=await engine.chooseComputerMove(c.fen(),{level:'master',stats,yieldControl:sync});assert.equal(stats.nodes,1600);assert.ok(stats.depth>=1&&stats.depth<3);assert.ok(c.moves({verbose:true}).some(x=>uci(x)===m));
  let stop=false,yields=0;assert.equal(await engine.chooseComputerMove(c.fen(),{level:'master',isCancelled:()=>stop,yieldControl:async()=>{if(++yields===4)stop=true;}}),null);assert.equal(yields,4);
 });
+test('student notices a simple pawn threat to its undefended knight, while still making tactical mistakes',async()=>{
+ const fen='6k1/8/8/8/1p6/2N5/P7/6K1 w - - 0 1';const m=await engine.chooseComputerMove(fen,{level:'student',seed:0,yieldControl:sync});assert.equal(m.slice(0,2),'c3');
+});
