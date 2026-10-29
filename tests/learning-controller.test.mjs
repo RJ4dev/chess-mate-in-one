@@ -11,6 +11,20 @@ function controller(store,animations={move:async()=>{}},narrate=()=>{},voiceEnab
  const ui=createLearningUI({doc,store,animations,blocked:()=>false,paused:()=>false,toast(){},tone(){},home(){},narrate,voiceEnabled,isCurrent,collaborative});
  return Object.assign(ui,{nodes});
 }
+test('black prefix and help survive durable reload and given white pieces grant no skipped facts',async()=>{
+ const map=new Map(),storage={getItem:k=>map.get(k),setItem:(k,v)=>map.set(k,v)};
+ let store=createLearningStore(storage),ui=controller(()=>store);
+ const count=()=>((ui.nodes.get('board').innerHTML||'').match(/has-piece/g)||[]).length;
+ ui.start('board-build-black-1');assert.equal(count(),16);ui.primary();ui.primary();await ui.square('h8');ui.primary();assert.equal(count(),18);
+ ui.hint();ui.cancel();store=createLearningStore(storage);ui=controller(()=>store);ui.start('board-build-black-1',store.get().resume);
+ assert.equal(count(),18);await ui.square('b8');assert.deepEqual(store.get().achievements['build-black-knight-left'],{assisted:true,independent:false});
+ ui.primary();await ui.square('g8');ui.primary();assert.equal(count(),20);
+ const fresh=createLearningStore(null);ui=controller(()=>fresh);ui.start('board-build-black-2');assert.equal(count(),20);
+ ui.primary();ui.primary();await ui.square('f8');ui.primary();await ui.square('d8');ui.primary();await ui.square('e8');ui.primary();assert.equal(count(),24);
+ assert.ok(fresh.get().completed.includes('board-build-black-2'));assert.ok(!fresh.get().completed.includes('board-build-black-1'));
+ assert.ok(Object.keys(fresh.get().achievements).every(id=>!id.startsWith('build-white-')&&!id.startsWith('build-pawn-')));
+ assert.equal(fresh.get().achievements['build-black-rook-left'],undefined);
+});
 test('pawn prefix and help restore durably while direct later entry grants no skipped lessons',async()=>{
  const map=new Map(),storage={getItem:k=>map.get(k),setItem:(k,v)=>map.set(k,v)};
  let store=createLearningStore(storage),ui=controller(()=>store);

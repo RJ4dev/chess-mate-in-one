@@ -77,11 +77,14 @@ Each increment keeps all earlier scenarios. Counts below cover both entry points
 | One missing initial piece | 12 | 60 |
 | White back rank | 14 | 74 |
 | Eight white pawns | 14 | 88 |
+| Black back rank | 14 | 102 |
 
 Rescue cases cover both colours, alternative escapes, taking the attacker with another piece, mistakes, help, reload, a real pending animation cancelled on profile change, keyboard, pause and unsupported `safety-v1` filtering.
 
 Placement cases cover the visible sample, 31→32 pieces, occupied-square errors, retry, help, reload, two profiles, unsupported `board-v1`, keyboard, pause and 320 px layout. Rescue review/finished captions and placement demo/feedback captions are checked against their enabled actions.
 
 Back-rank cases check literal accumulated prefixes 0→4→8, errors, retry, help across reload, direct entry without skipped facts, two profiles and capability boundaries. Pawn cases extend this to 8→12→16, checking all eight second-rank squares and the unchanged first rank. They repeat the direct-entry, profile, assistance, unsupported-sync, keyboard, pause and mobile-width boundaries.
+
+Black back-rank cases extend this to 16→20→24, checking the literal white side, each black piece and the visible board orientation (White below, a-file left). Direct entry grants no skipped white or black facts. The same assistance, reload, profiles, unsupported-sync, retry, keyboard, pause and mobile-width boundaries apply.
 
 These tests use fixtures only. Physical Android, child comprehension, production synchronization and genuine two-device acceptance remain separate.
