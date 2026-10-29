@@ -1,3 +1,4 @@
+import {SETUP_LESSON,restoreSetup} from './setup-challenge.js';
 import {EXERCISES} from './exercises.js';
 import {LESSONS,lessonById,validLearningEvent} from './curriculum.js';
 const KEY='mate-learning-v1';
@@ -9,6 +10,7 @@ export function normalizeLearning(value){
  out.seen=EXERCISES.filter(e=>Array.isArray(value.seen)&&value.seen.includes(e.id)).map(e=>e.id);
  const r=value.resume,l=r&&lessonById(r.lessonId,r.seed);
  if(l&&Number.isInteger(r.index)&&r.index>=0&&r.index<l.steps.length)out.resume={lessonId:l.id,index:r.index,seed:Number.isSafeInteger(r.seed)?r.seed:0};
+ if(l?.id===SETUP_LESSON){const setup=restoreSetup(r.setup);out.resume=setup&&setup.squares.length<32&&r.index===0&&r.seed===setup.seed?{lessonId:l.id,index:0,seed:setup.seed,setup}:null;}
  return out;
 }
 export function recordLearning(progress,event){
@@ -23,6 +25,10 @@ export function rememberHelp(progress,exerciseId){
 }
 export function mergeLearning(a,b){
  const left=normalizeLearning(a),right=normalizeLearning(b);
+ // Persist newly learned assistance in the active device draft before any
+ // network ACK/UI callback. Historical assistance before a fresh attempt is
+ // already on the left and does not taint that intentionally new attempt.
+ if(left.resume?.lessonId===SETUP_LESSON&&right.achievements['assemble-initial']?.assisted&&!left.achievements['assemble-initial']?.assisted)left.resume.setup.assisted=true;
  for(const [id,result] of Object.entries(right.achievements)){const old=left.achievements[id]||{};left.achievements[id]={assisted:!!(old.assisted||result.assisted),independent:!!(old.independent||result.independent)};}
  left.completed=LESSONS.filter(l=>left.completed.includes(l.id)||right.completed.includes(l.id)).map(l=>l.id);
  // Resume is local to this device. Remote achievements never overwrite it.

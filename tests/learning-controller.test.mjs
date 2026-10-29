@@ -11,6 +11,21 @@ function controller(store,animations={move:async()=>{}},narrate=()=>{},voiceEnab
  const ui=createLearningUI({doc,store,animations,blocked:()=>false,paused:()=>false,toast(){},tone(){},home(){},narrate,voiceEnabled,isCurrent,collaborative});
  return Object.assign(ui,{nodes});
 }
+test('full assembly starts empty, restores actual alternate placements and help, and awards only the completed challenge',async()=>{
+ const {setupOrder,INITIAL_SETUP}=await import('../dist/js/setup-challenge.js');
+ const map=new Map(),storage={getItem:k=>map.get(k),setItem:(k,v)=>map.set(k,v)};
+ let store=createLearningStore(storage),ui=controller(()=>store);
+ const count=()=>((ui.nodes.get('board').innerHTML||'').match(/has-piece/g)||[]).length;
+ const resume={lessonId:'board-assemble',index:0,seed:123,setup:{seed:123,squares:[],assisted:false}};store.save({...store.get(),resume});ui.start('board-assemble',store.get().resume);assert.equal(count(),0);
+ const first=Object.keys(INITIAL_SETUP).filter(sq=>INITIAL_SETUP[sq]===setupOrder(123)[0]).at(-1);await ui.square(first);assert.equal(count(),1);
+ assert.equal(store.get().achievements['assemble-initial'],undefined);ui.hint();ui.cancel();store=createLearningStore(storage);ui=controller(()=>store);ui.start('board-assemble',store.get().resume);assert.equal(count(),1);
+ assert.equal(store.get().resume.setup.assisted,true);
+ for(let i=1;i<32;i++){const r=store.get().resume;await ui.square(Object.keys(INITIAL_SETUP).find(sq=>INITIAL_SETUP[sq]===setupOrder(123)[i]&&!r.setup.squares.includes(sq)));}
+ assert.equal(count(),32);assert.deepEqual(store.get().achievements,{'assemble-initial':{assisted:true,independent:false}});assert.deepEqual(store.get().completed,['board-assemble']);assert.equal(store.get().resume,null);
+ ui.start('board-assemble');assert.equal(count(),0);
+ for(let i=0;i<32;i++){const r=store.get().resume;await ui.square(Object.keys(INITIAL_SETUP).find(sq=>INITIAL_SETUP[sq]===setupOrder(r.seed)[i]&&!r.setup.squares.includes(sq)));}
+ assert.deepEqual(store.get().achievements['assemble-initial'],{assisted:true,independent:true});
+});
 test('black prefix and help survive durable reload and given white pieces grant no skipped facts',async()=>{
  const map=new Map(),storage={getItem:k=>map.get(k),setItem:(k,v)=>map.set(k,v)};
  let store=createLearningStore(storage),ui=controller(()=>store);
@@ -250,4 +265,35 @@ test('board study accepts a single square click without moving a chess piece and
  ui.primary();await ui.square('a8');assert.equal(store.get().achievements['orientation-black-right'].independent,true);
  assert.match(ui.nodes.get('board-label').textContent,/Белые снизу/);
  ui.cancel();ui.start('check');assert.match(ui.nodes.get('board-label').textContent,/Ход белых/);
+});
+test('setup synchronization cannot repaint a mode opened after leaving the challenge',()=>{
+ const store=createLearningStore(null);let current=true;
+ const ui=controller(()=>store,undefined,undefined,undefined,()=>current);ui.start('board-assemble');
+ current=false;ui.nodes.get('board').innerHTML='another mode';ui.refreshProgress();
+ assert.equal(ui.nodes.get('board').innerHTML,'another mode');
+});
+test('remote assistance during an unfinished assembly is saved before an immediate reload',()=>{
+ const map=new Map(),storage={getItem:k=>map.get(k),setItem:(k,v)=>map.set(k,v)};
+ const store=createLearningStore(storage),ui=controller(()=>store);ui.start('board-assemble');
+ store.save(recordLearning(store.get(),{eventId:'remote-setup-help',contentVersion:1,lessonId:'board-assemble',exerciseId:'assemble-initial',skillId:'starting-position',assistance:'assisted'}));ui.refreshProgress();
+ assert.equal(createLearningStore(storage).get().resume.setup.assisted,true);
+});
+test('remote assistance is durable before failed or still-pending event ACK, including reload before any UI callback',async()=>{
+ const {createLearningSync}=await import('../dist/js/learning-sync.js');const {setupOrder,INITIAL_SETUP}=await import('../dist/js/setup-challenge.js');
+ for(const pending of [false,true]){
+  const map=new Map(),storage={getItem:k=>map.get(k),setItem:(k,v)=>map.set(k,v)};
+  let store=createLearningStore(storage),ui=controller(()=>store);ui.start('board-assemble');
+  const first=store.get().resume;await ui.square(Object.keys(INITIAL_SETUP).find(sq=>INITIAL_SETUP[sq]===setupOrder(first.seed)[0]));
+  let release,started;const waiting=new Promise(r=>release=r),atAck=new Promise(r=>started=r);
+  const worker=createLearningSync({getSession:()=>({player:{id:'fixture'},token:'fixture-only'}),getStore:()=>store,client:{async request(route,data){
+   if(route==='/capabilities')return{learning:{enabled:true,contentVersion:1,contentGroups:['setup-v1']}};
+   if(route==='/learning')return{learning:{version:1,achievements:{'assemble-initial':{assisted:true,independent:false}}}};
+   started();if(pending){await waiting;return{learning:{version:1},accepted:data.events.map(e=>e.eventId)};}throw Error('fixture ACK failure');
+  }}});
+  const run=worker.run();await atAck;if(!pending)await run;
+  assert.equal(createLearningStore(storage).get().resume.setup.assisted,true);
+  worker.cancel();release();await run;store=createLearningStore(storage);ui=controller(()=>store);ui.start('board-assemble',store.get().resume);
+  while(store.get().resume){const r=store.get().resume;await ui.square(Object.keys(INITIAL_SETUP).find(sq=>INITIAL_SETUP[sq]===setupOrder(r.seed)[r.setup.squares.length]&&!r.setup.squares.includes(sq)));}
+  assert.deepEqual(store.get().achievements['assemble-initial'],{assisted:true,independent:false});
+ }
 });

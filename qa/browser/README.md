@@ -79,6 +79,7 @@ Each increment keeps all earlier scenarios. Counts below cover both entry points
 | Eight white pawns | 14 | 88 |
 | Black back rank | 14 | 102 |
 | Eight black pawns | 14 | 116 |
+| Independent full setup | 16 | 132 |
 
 Rescue cases cover both colours, alternative escapes, taking the attacker with another piece, mistakes, help, reload, a real pending animation cancelled on profile change, keyboard, pause and unsupported `safety-v1` filtering.
 
@@ -91,3 +92,5 @@ Black back-rank cases extend this to 16→20→24, checking the literal white si
 Black-pawn cases extend this to 24→28→32, checking all 24 supplied pieces, all eight seventh-rank targets and White-below screen geometry. Direct chapter-2 entry must not award prior white/black chapters. They also cover assistance/reload, two profiles, unsupported capabilities, occupied retry, keyboard/pause and 320px. The completed supplied position is not independent full-board assembly from empty.
 
 These tests use fixtures only. Physical Android, child comprehension, production synchronization and genuine two-device acceptance remain separate.
+
+Independent setup cases start empty, place all 32 from shuffled prompts using literal interchangeable targets, reject errors/overlaps, distinguish whole-attempt assistance, restore the actual prefix/help, isolate two unfinished profiles, test explicit restart, keyboard/pause/exit/320px and unsupported setup-v1 groups with legacy ACK. No automatic example or skipped-lesson awards. Physical acceptance and production sync remain separate.

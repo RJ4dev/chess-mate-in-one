@@ -1,3 +1,4 @@
+import {SETUP_EXERCISE} from './setup-challenge.js';
 import {Chess,uci} from './chess.js';
 import {SPECIAL_EXERCISES} from './special-exercises.js';
 import {BEGINNER_EXERCISES} from './beginner-exercises.js';
@@ -30,7 +31,7 @@ const seeds=[
 const prompts={check:'Сделай ход с шахом чужому королю.',save:'Твой король под шахом. Найди любой способ спасти его.',mate:'Поставь мат за один ход.'};
 const skills={check:'give-check',save:'escape-check',mate:'mate-one'};
 export const EXERCISES=seeds.flatMap(([goal,familyId,fen])=>['w','b'].map(color=>({id:`${goal}-${familyId}-${color}`,goal,familyId,skillId:skills[goal],positionKind:'legalChess',fen:color==='w'?fen:opposite(fen),prompt:prompts[goal]}))).concat(BEGINNER_EXERCISES,SPECIAL_EXERCISES,BOARD_EXERCISES);
-EXERCISES.push(...SAFETY_EXERCISES);
+EXERCISES.push(...SAFETY_EXERCISES,SETUP_EXERCISE);
 export const exerciseById=id=>EXERCISES.find(e=>e.id===id);
 export function judgeSquare(exercise,value){
  if(exercise.positionKind!=='boardStudy'||!['square','placePiece'].includes(exercise.goal))throw Error('Unsupported position kind');

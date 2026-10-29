@@ -1,3 +1,5 @@
+import {createSetupUI} from './setup-ui.js';
+import {SETUP_LESSON} from './setup-challenge.js';
 import {Chess} from './chess.js';
 import {pieceSvg,pieceNames,icon} from './pieces.js';
 import {kingGuide} from './king-guide.js';
@@ -12,6 +14,7 @@ import {familyTurn} from './family.js';
 // belongs to one lesson epoch, cancelled by the host before navigation/profile changes.
 export function createLearningUI({doc,store,animations,blocked,paused,toast,tone,home,onProgress=()=>{},narrate=()=>{},voiceEnabled=()=>false,isCurrent=()=>true,collaborative=()=>false}){
  const $=id=>doc.getElementById(id),gate=createRequestGate();
+ const setup=createSetupUI({doc,store,blocked,paused,toast,tone,home,onProgress,collaborative,isCurrent});let assembling=false;
  let promotion=null;
  let lessonState,progress=store().get(),selected=null,focus='a1',busy=false,seed=0,hintShown=false,storageWarned=false;
  const exercise=()=>exerciseById(lessonState.steps[Math.min(lessonState.index,lessonState.steps.length-1)].exerciseId);
@@ -40,6 +43,7 @@ export function createLearningUI({doc,store,animations,blocked,paused,toast,tone
   if(restore)$('board').querySelector(`[data-square="${restore}"]`)?.focus({preventScroll:true});
  }
  function render(silent=false){
+  if(assembling){setup.render();return;}
   if(!lessonState)return;
   const s=lessonState,e=exercise(),lesson=lessonById(s.lessonId,seed),stage=s.steps[Math.min(s.index,s.steps.length-1)].stage;
   doc.body.dataset.phase=s.phase;
@@ -111,16 +115,18 @@ export function createLearningUI({doc,store,animations,blocked,paused,toast,tone
   if(isCurrent())busy=false;
  }
  return {
-  get textOnly(){return collaborative()||!!lessonById(lessonState?.lessonId,seed)?.textOnly;},
-  render,cancel(){gate.cancel();busy=false;if(promotion&&isCurrent()){promotion={...promotion};render(true);}},
-  reset(){gate.cancel();busy=false;promotion=null;lessonState=null;progress=store().get();selected=null;},
-  refreshProgress(){progress=store().get();if(lessonState&&lessonState.phase!=='finished')protectSeen();},
+  get textOnly(){return assembling||collaborative()||!!lessonById(lessonState?.lessonId,seed)?.textOnly;},
+  render,cancel(){if(assembling){setup.cancel();return;}gate.cancel();busy=false;if(promotion&&isCurrent()){promotion={...promotion};render(true);}},
+  reset(){assembling=false;setup.reset();gate.cancel();busy=false;promotion=null;lessonState=null;progress=store().get();selected=null;},
+  refreshProgress(){if(assembling){setup.refreshProgress();return;}progress=store().get();if(lessonState&&lessonState.phase!=='finished')protectSeen();},
   start(id,resume){
+   gate.cancel();assembling=id===SETUP_LESSON;if(assembling){setup.start(resume);return;}setup.reset();
    gate.cancel();busy=false;promotion=null;progress=store().get();seed=resume?.seed??(id.startsWith('mini-')?Math.floor(Math.random()*12):0);
    lessonState=beginLesson(id,seed);if(resume&&resume.lessonId===id&&Number.isInteger(resume.index)&&resume.index>=0&&resume.index<lessonState.steps.length){lessonState.index=resume.index;lessonState.phase=lessonState.steps[resume.index].stage==='show'?'demo':'playing';}
    selected=null;hintShown=false;protectSeen();saveCursor();render();
   },
   async square(sq){
+   if(assembling){setup.square(sq);return;}
    if(!active())return;focus=sq;
    if(exercise().positionKind==='boardStudy'){await answer(sq);return;}
    const c=new Chess(exercise().fen),p=c.get(sq);
@@ -131,14 +137,15 @@ export function createLearningUI({doc,store,animations,blocked,paused,toast,tone
    await answer(value);
   },
   primary(){
+   if(assembling){setup.primary();return;}
    if(promotion||busy||blocked())return;
    if(lessonState.phase==='demo'){void answer(null);return;}
    if(lessonState.phase==='feedback'){lessonState=retryStep(lessonState);render();return;}
    if(lessonState.phase==='finished'){home();return;}
    if(lessonState.phase==='review'){lessonState=nextStep(lessonState);hintShown=false;selected=null;if(lessonState.phase!=='finished')protectSeen();saveCursor();render();}
   },
-  hint(){if(!active())return;lessonState=markHelp(lessonState);progress=rememberHelp(progress,exercise().id);saveCursor();hintShown=true;selected=solutions(exercise())[0]?.slice(0,2)||null;render();tone('hint');},
-  showSolution(){if(active()){lessonState=markHelp(lessonState);void answer(null);}},
-  clearSelection(){promotion=null;selected=null;render();}
+  hint(){if(assembling){setup.hint();return;}if(!active())return;lessonState=markHelp(lessonState);progress=rememberHelp(progress,exercise().id);saveCursor();hintShown=true;selected=solutions(exercise())[0]?.slice(0,2)||null;render();tone('hint');},
+  showSolution(){if(assembling){setup.showSolution();return;}if(active()){lessonState=markHelp(lessonState);void answer(null);}},
+  clearSelection(){if(assembling){setup.clearSelection();return;}promotion=null;selected=null;render();}
  };
 }
