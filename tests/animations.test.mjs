@@ -64,6 +64,11 @@ test('movement can be disabled separately and a thinking pause is cancellable',a
  let callback,cleared=false,settled=false;const timer=createAnimations({setTimer:fn=>{callback=fn;return 7;},clearTimer:id=>{assert.equal(id,7);cleared=true;}});
  const done=timer.pause({duration:350}).then(()=>settled=true);assert.equal(settled,false);assert.equal(typeof callback,'function');timer.cancel();await done;assert.equal(cleared,true);
 });
+test('queenside castling holds the arrived king at its destination until the longer rook flight finishes',async()=>{
+ const e=environment(),king=e.element({left:256,top:0,width:64,height:64}),rook=e.element({left:0,top:0,width:64,height:64});king.piece=e.element();rook.piece=e.element();king.piece.outerHTML=rook.piece.outerHTML='<svg></svg>';king.piece.style.visibility=rook.piece.style.visibility='visible';
+ const board={querySelector:q=>q.includes('a1')?rook:e.element({left:192,top:0,width:64,height:64})};const fx=createAnimations();let settled=false;const done=fx.move({from:king,to:e.element({left:128,top:0,width:64,height:64}),board,move:{from:'e1',to:'c1',flags:'q'}}).then(()=>settled=true);
+ assert.equal(e.animations[0].options.duration,500);assert.equal(e.animations[1].options.duration,750);e.animations[0].finish();for(let i=0;i<8;i++)await Promise.resolve();assert.equal(settled,false);assert.equal(king.piece.style.visibility,'hidden');assert.equal(e.children.length,2);e.animations[1].finish();await done;assert.equal(king.piece.style.visibility,'visible');assert.equal(e.children.length,0);
+});
 
 test('cancel resolves every pending effect and removes their overlays', async()=>{
   const env=environment();const from=env.element();from.piece=env.element();
