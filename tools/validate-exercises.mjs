@@ -1,3 +1,4 @@
+import {SETUP_EXERCISE,INITIAL_SETUP,createSetup,setupOptions,placeSetup,setupPieces} from '../dist/js/setup-challenge.js';
 import assert from 'node:assert/strict';
 import {Chess,uci} from '../dist/js/chess.js';
 import {EXERCISES,judgeMove,judgeSquare} from '../dist/js/exercises.js';
@@ -5,6 +6,12 @@ import {LESSONS,WORLDS,BEGINNER_TOPICS} from '../dist/js/curriculum.js';
 const ids=new Set();
 for(const e of EXERCISES){
  assert(!ids.has(e.id),`Duplicate ${e.id}`);ids.add(e.id);
+ if(e.positionKind==='setupStudy'){
+  assert.equal(e,SETUP_EXERCISE);assert.equal(e.goal,'assemblePosition');assert.equal(e.syncGroup,'setup-v1');assert.equal(e.fen,undefined);
+  let s=createSetup(123);for(let i=0;i<32;i++)s=placeSetup(s,setupOptions(s).at(-1));
+  const expected=Object.fromEntries(new Chess().board().flat().filter(Boolean).map(p=>[p.square,p.color==='w'?p.type.toUpperCase():p.type]));
+  assert.deepEqual(INITIAL_SETUP,expected);assert.deepEqual(setupPieces(s),expected);assert.equal(s.assisted,false);continue;
+ }
  if(e.positionKind==='boardStudy'){
   assert(['square','placePiece'].includes(e.goal));assert.equal(e.fen,undefined);assert.equal(e.syncGroup,'board-v1');assert(e.answers.length>0);
   for(const [sq,piece] of Object.entries(e.pieces)){assert(/^[a-h][1-8]$/.test(sq));assert(/^[prnbqkPRNBQK]$/.test(piece));}
@@ -36,7 +43,7 @@ for(const goal of ['check','save']){
  assert(new Set(pool.map(e=>e.familyId)).size>=3);
  assert.equal(pool.filter(e=>new Chess(e.fen).turn()==='w').length,6);
 }
-for(const l of LESSONS){assert(l.steps.length>=3&&l.steps.length<=5);for(const s of l.steps)assert(ids.has(s.exerciseId),`${l.id}: missing ${s.exerciseId}`);}
+for(const l of LESSONS){assert(l.id==='board-assemble'?l.steps.length===1&&l.steps[0].stage==='independent':l.steps.length>=3&&l.steps.length<=5);for(const s of l.steps)assert(ids.has(s.exerciseId),`${l.id}: missing ${s.exerciseId}`);}
 for(const topic of BEGINNER_TOPICS){
  const pool=EXERCISES.filter(e=>e.topicId===topic.id);assert.equal(pool.length,8,topic.id);
  assert.equal(new Set(pool.map(e=>e.fen+' '+e.targetSquare)).size,8,topic.id);
