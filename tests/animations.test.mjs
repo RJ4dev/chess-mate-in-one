@@ -41,9 +41,33 @@ test('a move waits for flight, hides the source piece and restores it on complet
   const done=fx.move({from,to,pieceHtml:'<svg></svg>'}).then(()=>{settled=true;});
   assert.equal(from.piece.style.visibility,'hidden');
   assert.equal(settled,false);assert.equal(env.children.length,1);
-  assert.equal(env.animations[0].options.duration,1100);
+  assert.equal(env.animations[0].options.duration,Math.hypot(190,280)/64/4*1000);
   env.animations[0].finish();await done;
   assert.equal(from.piece.style.visibility,'visible');assert.equal(env.children.length,0);
+});
+
+test('move speed is measured in cells per second, bounded and orientation independent',async()=>{
+ for(const [distance,speed,want] of [[256,4,1000],[256,2,2000],[256,8,500],[8,4,120],[4096,4,2000],[-256,4,1000]]){
+  const e=environment(),fx=createAnimations({speed:()=>speed});const done=fx.move({from:e.element({left:0,top:0,width:64,height:64}),to:e.element({left:distance,top:0,width:64,height:64}),pieceHtml:'piece'});
+  assert.equal(e.animations[0].options.duration,want);e.animations[0].finish();await done;
+ }
+});
+test('castling animates both king and rook and cancellation restores both sources',async()=>{
+ const e=environment(),king=e.element({left:256,top:0,width:64,height:64}),rook=e.element({left:448,top:0,width:64,height:64});king.piece=e.element();rook.piece=e.element();
+ king.piece.outerHTML='<svg></svg>';rook.piece.outerHTML='<svg></svg>';
+ const targets={h1:rook,f1:e.element({left:320,top:0,width:64,height:64})};const board={querySelector:q=>targets[q.match(/"([a-h][1-8])"/)[1]]};
+ const fx=createAnimations(),done=fx.move({from:king,to:e.element({left:384,top:0,width:64,height:64}),board,move:{from:'e1',to:'g1',flags:'k'}});
+ assert.equal(e.animations.length,2);assert.equal(king.piece.style.visibility,'hidden');assert.equal(rook.piece.style.visibility,'hidden');fx.cancel();await done;assert.equal(e.children.length,0);assert.equal(rook.piece.style.visibility,undefined);
+});
+test('movement can be disabled separately and a thinking pause is cancellable',async()=>{
+ const e=environment(),fx=createAnimations({motionEnabled:()=>false});await fx.move({from:e.element(),to:e.element(),pieceHtml:'piece'});assert.equal(e.animations.length,0);
+ let callback,cleared=false,settled=false;const timer=createAnimations({setTimer:fn=>{callback=fn;return 7;},clearTimer:id=>{assert.equal(id,7);cleared=true;}});
+ const done=timer.pause({duration:350}).then(()=>settled=true);assert.equal(settled,false);assert.equal(typeof callback,'function');timer.cancel();await done;assert.equal(cleared,true);
+});
+test('queenside castling holds the arrived king at its destination until the longer rook flight finishes',async()=>{
+ const e=environment(),king=e.element({left:256,top:0,width:64,height:64}),rook=e.element({left:0,top:0,width:64,height:64});king.piece=e.element();rook.piece=e.element();king.piece.outerHTML=rook.piece.outerHTML='<svg></svg>';king.piece.style.visibility=rook.piece.style.visibility='visible';
+ const board={querySelector:q=>q.includes('a1')?rook:e.element({left:192,top:0,width:64,height:64})};const fx=createAnimations();let settled=false;const done=fx.move({from:king,to:e.element({left:128,top:0,width:64,height:64}),board,move:{from:'e1',to:'c1',flags:'q'}}).then(()=>settled=true);
+ assert.equal(e.animations[0].options.duration,500);assert.equal(e.animations[1].options.duration,750);e.animations[0].finish();for(let i=0;i<8;i++)await Promise.resolve();assert.equal(settled,false);assert.equal(king.piece.style.visibility,'hidden');assert.equal(e.children.length,2);e.animations[1].finish();await done;assert.equal(king.piece.style.visibility,'visible');assert.equal(e.children.length,0);
 });
 
 test('cancel resolves every pending effect and removes their overlays', async()=>{

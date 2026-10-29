@@ -15,6 +15,7 @@ import {blackBackRankAcceptance} from './black-back-rank.mjs';
 import {blackPawnsAcceptance} from './black-pawns.mjs';
 import {setupChallengeAcceptance} from './setup-challenge.mjs';
 import {setupReentryAcceptance} from './setup-reentry.mjs';
+import {motionAcceptance} from './motion.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const resultsDir = fileURLToPath(new URL('./results/', import.meta.url));
@@ -94,12 +95,14 @@ const saved = (page, key = gameKey('a')) => page.evaluate(key => JSON.parse(loca
 const move = async (page, value) => {
   await page.locator(`[data-square="${value.slice(0, 2)}"]`).click();
   await page.locator(`[data-square="${value.slice(2, 4)}"]`).click();
+  await page.waitForFunction(()=>!document.querySelector('[data-move-flight]'));
 };
 async function movesAre(page, count, key = gameKey('a')) {
   await page.waitForFunction(({count, key}) => {
     const saved = JSON.parse(localStorage.getItem(key) || 'null');
     return saved?.moves.length === count;
   }, {count, key}, {timeout: 15000, polling: 50});
+  await page.waitForFunction(()=>!document.querySelector('[data-move-flight]'));
 }
 async function verifyLegalReply(page, key = gameKey('a')) {
   const value = await saved(page, key);
@@ -210,6 +213,7 @@ async function scenario(origin, entry, name, run, options = {}) {
   });
   await context.addInitScript(timerGate, {origin, seed});
   const page = await context.newPage();
+  if(options.reducedMotion)await page.emulateMedia({reducedMotion:'reduce'});
   page.on('pageerror', error => errors.push(error.message));
   const result = {entry, name, status: 'running'};
   report.scenarios.push(result);
@@ -355,6 +359,7 @@ try {
     await blackPawnsAcceptance({origin, entry, scenario, login});
     await setupChallengeAcceptance({origin, entry, scenario, login});
     await setupReentryAcceptance({origin, entry, scenario, login});
+    await motionAcceptance({origin,entry,scenario,release});
   }
   report.status = 'passed';
 } catch (error) {

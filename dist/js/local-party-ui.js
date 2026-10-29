@@ -1,28 +1,39 @@
 import {createLocalParty} from './local-party.js';
 import {pieceSvg,pieceNames} from './pieces.js';
 const KEY='mate-local-party-v1';
-export function createLocalPartyUI({doc,getStorage,blocked,paused,toast,isCurrent=()=>true,opponent=null,storageKey=KEY}){
- const $=id=>doc.getElementById(id);let game=createLocalParty(),selected=null,promotion=null,focus='a1',epoch=0,thinking=false,failed=false;
- const active=()=>!thinking&&!blocked()&&!paused()&&game.status().kind==='playing'&&(!opponent||game.turn()==='w');
+export function createLocalPartyUI({doc,getStorage,blocked,paused,toast,isCurrent=()=>true,opponent=null,storageKey=KEY,animations=null}){
+ const $=id=>doc.getElementById(id);let game=createLocalParty(),selected=null,promotion=null,focus='a1',epoch=0,thinking=false,failed=false,animating=false;
+ const active=()=>!animating&&!thinking&&!blocked()&&!paused()&&game.status().kind==='playing'&&(!opponent||game.turn()==='w');
  function save(){try{getStorage().setItem(storageKey,JSON.stringify(game.snapshot()));}catch{toast('Партия сохранится только до выхода из режима.');}}
- function commit(value){if(!active())return;if(!game.move(value)){toast('Этот ход сейчас невозможен.');return;}selected=null;promotion=null;save();render();}
+ function commit(value,computer=false){
+  if((!computer&&!active())||animating||blocked()||paused()||!isCurrent())return false;
+  const move=typeof value==='string'&&game.legal(value.slice(0,2)).find(m=>m.from+m.to+(m.promotion||'')===value);
+  if(!move||!game.move(value)){toast('Этот ход сейчас невозможен.');return false;}
+  selected=null;promotion=null;save();
+  if(!animations){render();return true;}
+  const id=++epoch;animating=true;
+  const complete=()=>{if(id!==epoch||!isCurrent())return;animating=false;render();};
+  try{Promise.resolve(animations.move({from:$('board').querySelector(`[data-square="${move.from}"]`),to:$('board').querySelector(`[data-square="${move.to}"]`),board:$('board'),move})).then(complete,complete);}catch{complete();}
+  return true;
+ }
  function think(){
-  if(!opponent||thinking||failed||!isCurrent()||blocked()||paused()||game.turn()!=='b'||game.status().kind!=='playing')return;
+  if(!opponent||animating||thinking||failed||!isCurrent()||blocked()||paused()||game.turn()!=='b'||game.status().kind!=='playing')return;
   const id=++epoch;thinking=true;render();
-  Promise.resolve().then(()=>opponent(game.fen(),{isCancelled:()=>id!==epoch||!isCurrent()})).then(value=>{
+  Promise.resolve(animations?.pause?.({duration:350})).then(()=>{if(id!==epoch||!isCurrent()||blocked()||paused())return null;return opponent(game.fen(),{isCancelled:()=>id!==epoch||!isCurrent()});}).then(value=>{
    if(id!==epoch||!isCurrent())return;thinking=false;
    if(blocked()||paused())return;
-   if(!value||!game.move(value))throw Error('Computer returned no legal move');
-   selected=null;save();render();
+   if(!value||!commit(value,true))throw Error('Computer returned no legal move');
   }).catch(()=>{if(id!==epoch||!isCurrent())return;thinking=false;failed=true;toast('Не удалось рассчитать ход. Можно повторить.');render();});
  }
- function render(){
+ function render(skipThink=false){
+  if(animating)return;
+  const last=game.snapshot().moves.at(-1),lastFrom=last?.slice(0,2),lastTo=last?.slice(2,4);
   const status=game.status(),legal=selected&&!promotion&&active()?game.legal(selected):[],restore=doc.activeElement?.dataset.square;
   doc.body.dataset.phase=status.kind==='playing'?'playing':'finished';
   let html='';
   for(let rank=8;rank>=1;rank--)for(let file=0;file<8;file++){
    const square=String.fromCharCode(97+file)+rank,p=game.piece(square),color=p?.color==='w'?(['p','r'].includes(p?.type)?'белая':'белый'):(['p','r'].includes(p?.type)?'чёрная':'чёрный');
-   html+=`<button class="square ${(file+rank)%2?'dark':''} ${p?'has-piece':''} ${square===selected?'selected':''} ${legal.some(m=>m.to===square)?'target':''}" data-square="${square}" aria-label="${square}, ${p?color+' '+pieceNames[p.type]:'пустая клетка'}" aria-pressed="${square===selected}" tabindex="${square===focus?0:-1}">${p?pieceSvg(p.type,p.color):''}${file===0?`<span class="coordinate rank-label">${rank}</span>`:''}${rank===1?`<span class="coordinate file-label">${String.fromCharCode(97+file)}</span>`:''}</button>`;
+   html+=`<button class="square ${(file+rank)%2?'dark':''} ${p?'has-piece':''} ${square===selected?'selected':''} ${square===lastFrom?'last-move last-from':square===lastTo?'last-move last-to':''} ${(status.check||status.kind==='mate')&&p?.type==='k'&&p.color===game.turn()?'king-check':''} ${legal.some(m=>m.to===square)?'target':''}" data-square="${square}" aria-label="${square}, ${p?color+' '+pieceNames[p.type]:'пустая клетка'}" aria-pressed="${square===selected}" tabindex="${square===focus?0:-1}">${p?pieceSvg(p.type,p.color):''}${file===0?`<span class="coordinate rank-label">${rank}</span>`:''}${rank===1?`<span class="coordinate file-label">${String.fromCharCode(97+file)}</span>`:''}</button>`;
   }
   $('board').innerHTML=html;$('board').classList.toggle('paused-board',paused());if(restore)$('board').querySelector(`[data-square="${restore}"]`)?.focus({preventScroll:true});
   $('board-label').textContent=game.turn()==='w'?'Ход белых':'Ход чёрных';$('motif').textContent=opponent?'Простой компьютер':'Партия вдвоём';$('round-label').textContent=(opponent?'КОМПЬЮТЕР · ':'ДВА ИГРОКА · ')+game.snapshot().moves.length+' ПОЛУХОДОВ';
@@ -42,11 +53,11 @@ export function createLocalPartyUI({doc,getStorage,blocked,paused,toast,isCurren
   }
   $('primary-button').hidden=status.kind==='playing'&&!failed;$('primary-button').disabled=false;$('primary-button').textContent=failed?'Повторить ход':'Новая партия';
   $('mission-note').textContent=(opponent?'Ты играешь белыми против простого компьютера. ':'')+'Партия сохраняется на этом устройстве для текущего профиля. Звёзды и рейтинг не меняются.';
-  $('board-caption').textContent=promotion?'Выбери фигуру в панели':status.kind==='playing'?'Белые и чёрные играют по очереди':'Партия завершена';
-  think();
+  $('board-caption').textContent=promotion?'Выбери фигуру в панели':last?`Последний ход: ${lastFrom} → ${lastTo}`:status.kind==='playing'?'Белые и чёрные играют по очереди':'Партия завершена';
+  if(!skipThink)think();
  }
- return {render,start(){epoch++;thinking=false;failed=false;let saved;try{const raw=getStorage()?.getItem(storageKey);if(raw)saved=JSON.parse(raw);}catch{toast('Не удалось прочитать сохранённую партию.');}game=createLocalParty(saved);if(!game.restored)toast('Сохранение партии повреждено. Открыта новая доска.');selected=null;promotion=null;render();},
-  cancel(){if(!isCurrent())return;epoch++;thinking=false;if(promotion){promotion={...promotion};render();}},clearSelection(){selected=null;promotion=null;render();},
+ return {render,start(){epoch++;animating=false;animations?.cancel?.();thinking=false;failed=false;let saved;try{const raw=getStorage()?.getItem(storageKey);if(raw)saved=JSON.parse(raw);}catch{toast('Не удалось прочитать сохранённую партию.');}game=createLocalParty(saved);if(!game.restored)toast('Сохранение партии повреждено. Открыта новая доска.');selected=null;promotion=null;render();},
+  cancel(){if(!isCurrent())return;const wasAnimating=animating;epoch++;animating=false;animations?.cancel?.();thinking=false;if(promotion){promotion={...promotion};render(true);}else if(wasAnimating)render(true);},clearSelection(){selected=null;promotion=null;render();},
   square(square){if(!active()||promotion)return;focus=square;const p=game.piece(square);if(p?.color===game.turn()){selected=selected===square?null:square;render();return;}if(!selected)return;const moves=game.legal(selected).filter(m=>m.to===square);if(moves.some(m=>m.promotion)){promotion={value:selected+square};render();return;}commit(selected+square);},
   primary(){if(failed&&!blocked()&&!paused()){failed=false;render();return;}if(!blocked()&&!paused()&&game.status().kind!=='playing'){epoch++;thinking=false;failed=false;game=createLocalParty();selected=null;promotion=null;save();render();}}
  };

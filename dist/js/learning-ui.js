@@ -36,7 +36,7 @@ export function createLearningUI({doc,store,animations,blocked,paused,toast,tone
   let html='';
   for(let rank=8;rank>=1;rank--)for(let file=0;file<8;file++){
    const sq=String.fromCharCode(97+file)+rank,raw=study?studyPieces[sq]:null,p=study?(raw?{type:raw.toLowerCase(),color:raw===raw.toUpperCase()?'w':'b'}:null):chess.get(sq),feminine=p&&['r','p'].includes(p.type),color=p?.color==='w'?(feminine?'белая':'белый'):(feminine?'чёрная':'чёрный');
-   const classes=['square',(file+rank)%2?'dark':'',p?'has-piece':'',sq===selected?'selected':'',legal.includes(sq)?'target':'',(move&&(move.from===sq||move.to===sq)||study&&s.result?.correct&&s.result.square===sq)?'last-move':'',chess&&p?.type==='k'&&p.color===chess.turn()&&chess.isCheck()?'king-check':''].filter(Boolean).join(' ');
+   const classes=['square',(file+rank)%2?'dark':'',p?'has-piece':'',sq===selected?'selected':'',legal.includes(sq)?'target':'',move?.from===sq?'last-move last-from':move?.to===sq?'last-move last-to':study&&s.result?.correct&&s.result.square===sq?'last-move last-to':'',chess&&p?.type==='k'&&p.color===chess.turn()&&chess.isCheck()?'king-check':''].filter(Boolean).join(' ');
    html+=`<button class="${classes}" data-square="${sq}" aria-label="${sq}, ${p?color+' '+pieceNames[p.type]:'пустая клетка'}${e.targetSquare===sq?', цель задания':rescueSquare===sq?', спасаемая фигура':''}" aria-pressed="${sq===selected}" tabindex="${sq===focus?0:-1}">${p?pieceSvg(p.type,p.color):''}${(e.targetSquare===sq||rescueSquare===sq)&&['demo','playing','feedback'].includes(s.phase)?'<span class="lesson-goal" aria-hidden="true">★</span>':''}${crosses.has(sq)?'<span class="blocked-cross" aria-hidden="true">×</span>':''}${file===0?`<span class="coordinate rank-label">${rank}</span>`:''}${rank===1?`<span class="coordinate file-label">${String.fromCharCode(97+file)}</span>`:''}</button>`;
   }
   $('board').innerHTML=html;$('board').classList.toggle('paused-board',paused());
@@ -96,7 +96,7 @@ export function createLearningUI({doc,store,animations,blocked,paused,toast,tone
   if(busy||blocked()||paused())return;
   const before=lessonState,isCurrent=gate.begin();busy=true;
   await animateAnswer(before,value?{kind:exercise().positionKind==='boardStudy'?'square':'move',value}:null,{
-   animate:move=>animations.move({from:$('board').querySelector(`[data-square="${move.from}"]`),to:$('board').querySelector(`[data-square="${move.to}"]`),duration:1100}),isCurrent,
+   animate:move=>animations.move({from:$('board').querySelector(`[data-square="${move.from}"]`),to:$('board').querySelector(`[data-square="${move.to}"]`),board:$('board'),move}),isCurrent,
    onCommit:next=>{
     // Sync may finish while a piece is in flight. Judge assistance against the
     // latest facts before giving praise or recording a completed answer.
