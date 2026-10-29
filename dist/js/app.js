@@ -83,7 +83,7 @@ function familyStore(){const id=session?.player.id||'';if(!familyStores.has(id))
 let learningSync;
 const localParty=createLocalPartyUI({doc:document,getStorage:()=>scopedStorage,isCurrent:()=>mode==='local',blocked:()=>mode!=='local'||overlayOpen()||document.hidden,paused:()=>paused,toast});
 const computerParty=createLocalPartyUI({doc:document,getStorage:()=>scopedStorage,isCurrent:()=>mode==='computer',blocked:()=>mode!=='computer'||overlayOpen()||document.hidden,paused:()=>paused,toast,opponent:chooseComputerMove,storageKey:'mate-computer-party-v1'});
-const learning=createLearningUI({doc:document,store:()=>familyActive?familyStore():learningStore(),animations,blocked:()=>mode!=='learn'||overlayOpen()||document.hidden,paused:()=>paused,toast,tone,home:()=>showHome(),narrate:text=>coach.say(text),voiceEnabled:()=>coach.enabled,isCurrent:()=>mode==='learn',collaborative:()=>familyActive,onProgress:()=>{if(!familyActive)void learningSync?.run();}});
+const learning=createLearningUI({doc:document,store:()=>familyActive?familyStore():learningStore(),animations,blocked:()=>mode!=='learn'||overlayOpen()||document.hidden,paused:()=>paused,toast,tone,home:()=>showHome(),narrate:text=>coach.say(text),voiceEnabled:()=>coach.enabled,isCurrent:()=>mode==='learn',collaborative:()=>familyActive,confirmSetupRestart,onProgress:()=>{if(!familyActive)void learningSync?.run();}});
 learningSync=createLearningSync({getSession:()=>session,getStore:learningStore,client:ranking,onChange:()=>updateLearningStatus(),onMerged:()=>{learning.refreshProgress();if(mode==='home')renderHome();}});
 let homeView='modes';
 const originalModeCards=$('mode-cards').innerHTML;
@@ -130,7 +130,19 @@ function updateLearningStatus(){
  $('learning-status').textContent=!learningStore().durable?'Браузер не сохраняет продолжение после закрытия страницы.':learningSync?.status==='synced-all'?'Ходы фигур, шах, защита и мат синхронизированы. Ориентация доски, расстановка, спасение фигур, особые ходы и продолжение — на этом устройстве.':learningSync?.status==='synced'?'Шах, защита и мат синхронизированы. Ходы фигур, ориентация доски, расстановка, спасение фигур, особые ходы и продолжение — на этом устройстве.':learningSync?.status==='syncing'?'Сверяем учебные достижения…':session?'Учебный прогресс на этом устройстве. Серверная синхронизация пока недоступна.':'Гость: учебный прогресс хранится на этом устройстве. Можно играть без регистрации.';
 }
 function leaveHome(){$('mode-home').hidden=true;document.body.classList.remove('is-home');document.body.classList.remove('is-learning','is-board-study');}
-function startLearning(id,resume,shared=false){cancelAction();clock.pause();if(mode==='play'&&state.answers.length)settle();closeMenu(false);closeModal();familyActive=shared;leaveHome();mode='learn';paused=false;document.body.classList.add('is-learning');learning.start(id,resume);updateProfile();}
+function confirmSetupRestart(restart,cancel=closeModal){
+ modal('<h2 class="modal-title" id="modal-title">Начать заново?</h2><p class="modal-copy">Незавершённая сборка будет сброшена. Пройденные занятия и достижения сохранятся.</p><button class="primary-button" id="setup-reset-confirm">Сбросить и начать заново</button><button class="secondary-button" id="setup-reset-cancel">Отмена</button>');
+ $('setup-reset-confirm').onclick=()=>{closeModal();restart();};$('setup-reset-cancel').onclick=cancel;
+}
+function chooseSetupAttempt(){
+ const owner=learningStore(),resume=owner.get().resume;
+ if(resume?.lessonId!=='board-assemble'){showHome('lessons');return;}
+ modal(`<h2 class="modal-title" id="modal-title">Собери всю доску</h2><p class="modal-copy">Есть незавершённая сборка на этом устройстве${resume.setup.assisted?' — с помощью':''}.</p><button class="primary-button" id="setup-continue">Продолжить — ${resume.setup.squares.length} из 32</button><button class="secondary-button" id="setup-new">Начать заново</button><button class="secondary-button" id="setup-home">На главную</button>`);
+ $('setup-continue').onclick=()=>{if(owner!==learningStore())return;const current=owner.get().resume;if(current?.lessonId==='board-assemble')startLearning('board-assemble',current);else showHome('lessons');};
+ $('setup-new').onclick=()=>confirmSetupRestart(()=>{if(owner===learningStore())startLearning('board-assemble',false);},()=>{if(owner===learningStore())chooseSetupAttempt();else showHome();});
+ $('setup-home').onclick=()=>showHome();
+}
+function startLearning(id,resume,shared=false){if(id==='board-assemble'&&resume===undefined&&!shared&&learningStore().get().resume?.lessonId===id){chooseSetupAttempt();return;}cancelAction();clock.pause();if(mode==='play'&&state.answers.length)settle();closeMenu(false);closeModal();familyActive=shared;leaveHome();mode='learn';paused=false;document.body.classList.add('is-learning');learning.start(id,resume);updateProfile();}
 $('home-back').onclick=()=>showHome();$('continue-learning').onclick=()=>{const resume=learningStore().get().resume;if(resume)startLearning(resume.lessonId,resume);};
 const lessons=[
  {id:'lesson-check',fen:'k7/8/2K5/8/8/8/8/1R6 w - - 0 1',mateMovesUci:['b1a1'],motif:'rook',title:'Сначала — шах',text:'Нажми на ладью b1, затем на клетку a1.',after:'Шах! Но ещё не мат.',why:'Король может уйти на b8. Посмотри на его защиту.'},

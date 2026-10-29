@@ -11,6 +11,22 @@ function controller(store,animations={move:async()=>{}},narrate=()=>{},voiceEnab
  const ui=createLearningUI({doc,store,animations,blocked:()=>false,paused:()=>false,toast(){},tone(){},home(){},narrate,voiceEnabled,isCurrent,collaborative});
  return Object.assign(ui,{nodes});
 }
+test('default assembly reentry restores the durable draft and assistance; only an explicit restart replaces it',async()=>{
+ const {setupOrder,INITIAL_SETUP}=await import('../dist/js/setup-challenge.js');
+ for(const assisted of [false,true]){
+  const map=new Map(),storage={getItem:k=>map.get(k),setItem:(k,v)=>map.set(k,v)};
+  let store=createLearningStore(storage),ui=controller(()=>store);ui.start('board-assemble');
+  for(let i=0;i<5;i++){const r=store.get().resume;await ui.square(Object.keys(INITIAL_SETUP).filter(sq=>INITIAL_SETUP[sq]===setupOrder(r.seed)[i]&&!r.setup.squares.includes(sq)).at(-1));}
+  if(assisted)ui.hint();const before=store.get();
+  store=createLearningStore(storage);ui=controller(()=>store);ui.start('board-assemble');
+  assert.deepEqual(store.get(),before,'omitting resume on reentry must not erase the saved attempt');
+  assert.equal((ui.nodes.get('board').innerHTML.match(/has-piece/g)||[]).length,5);
+  while(store.get().resume){const r=store.get().resume;await ui.square(Object.keys(INITIAL_SETUP).find(sq=>INITIAL_SETUP[sq]===setupOrder(r.seed)[r.setup.squares.length]&&!r.setup.squares.includes(sq)));}
+  const done=store.get();assert.deepEqual(done.achievements['assemble-initial'],{assisted,independent:!assisted});
+  ui.start('board-assemble');await ui.square('d4');ui.start('board-assemble',false);
+  assert.equal(store.get().resume.setup.squares.length,0);assert.equal(store.get().resume.setup.assisted,false);assert.deepEqual(store.get().achievements,done.achievements);
+ }
+});
 test('full assembly starts empty, restores actual alternate placements and help, and awards only the completed challenge',async()=>{
  const {setupOrder,INITIAL_SETUP}=await import('../dist/js/setup-challenge.js');
  const map=new Map(),storage={getItem:k=>map.get(k),setItem:(k,v)=>map.set(k,v)};
