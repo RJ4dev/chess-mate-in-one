@@ -1,15 +1,16 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 const mod=await import('../dist/js/experience.js').catch(()=>({}));
-const defaults={detailed:false,sound:false,effects:true,appearance:'garden',companion:'knight'};
+const defaults={detailed:false,sound:false,effects:true,appearance:'garden',companion:'knight',moveAnimation:true,moveSpeed:4};
 test('first visit defaults to simple layout, silent sound and effects',()=>{assert.equal(typeof mod.loadExperience,'function');assert.deepEqual(mod.loadExperience(null),defaults);});
-test('preferences roundtrip without touching rewards',()=>{assert.equal(typeof mod.saveExperience,'function');const map=new Map([['chess-progress','rewards']]);const storage={getItem:k=>map.get(k),setItem:(k,v)=>map.set(k,v)};const prefs={detailed:true,sound:true,effects:false,appearance:'sea',companion:'rook'};assert.equal(mod.saveExperience(storage,prefs),true);assert.deepEqual(mod.loadExperience(storage),prefs);assert.equal(map.get('chess-progress'),'rewards');});
+test('preferences roundtrip without touching rewards',()=>{assert.equal(typeof mod.saveExperience,'function');const map=new Map([['chess-progress','rewards']]);const storage={getItem:k=>map.get(k),setItem:(k,v)=>map.set(k,v)};const prefs={...defaults,detailed:true,sound:true,effects:false,appearance:'sea',companion:'rook',moveSpeed:2,moveAnimation:false};assert.equal(mod.saveExperience(storage,prefs),true);assert.deepEqual(mod.loadExperience(storage),prefs);assert.equal(map.get('chess-progress'),'rewards');});
 test('invalid preferences and denied storage safely use defaults',()=>{assert.equal(typeof mod.loadExperience,'function');for(const raw of ['oops','null','[]','{"detailed":"yes","sound":1,"effects":0}'])assert.deepEqual(mod.loadExperience({getItem:()=>raw}),defaults);assert.equal(mod.saveExperience({setItem:()=>{throw Error('denied');}},{}),false);assert.deepEqual(mod.loadExperience({getItem:()=>{throw Error('denied');}}),defaults);});
 test('older preferences retain sound/layout and unknown cosmetic IDs are bounded',()=>{
  const old={detailed:true,sound:true,effects:false};
  for(const extra of [{},{appearance:'<invalid>',companion:'king'}]){
-  assert.deepEqual(mod.loadExperience({getItem:()=>JSON.stringify({...old,...extra})}),{...old,appearance:'garden',companion:'knight'});
+  assert.deepEqual(mod.loadExperience({getItem:()=>JSON.stringify({...old,...extra})}),{...defaults,...old});
  }
 });
+test('invalid movement settings fall back without changing older preferences',()=>{for(const moveSpeed of [0,Infinity,-2,'4',99])assert.equal(mod.loadExperience({getItem:()=>JSON.stringify({...defaults,moveSpeed})}).moveSpeed,4);});
 test('all cosmetic choices roundtrip in the existing preference key and strip unrelated fields',()=>{
  const map=new Map([['mate-learning-v1','lessons'],['mate-family-v1','family'],['mate-player-session','session']]);
  const storage={getItem:k=>map.get(k),setItem:(k,v)=>map.set(k,v)};

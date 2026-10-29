@@ -30,7 +30,7 @@ const experience=loadExperience(storage),sounds=createSounds();
 const appScript=[...document.querySelectorAll('script[type="module"][src]')].find(script=>new URL(script.src).pathname.endsWith('/js/app.js'));
 const coach=createCoachAudio({clips:VOICE_CLIPS,assetBase:voiceAssetBase(document.URL,appScript?.src)});
 let effectTimer,busy=false,actionEpoch=0,defenseTimer,modalReturnTarget;
-const animations=createAnimations({enabled:()=>experience.effects,reduced:()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches});
+const animations=createAnimations({enabled:()=>experience.effects,reduced:()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches,motionEnabled:()=>experience.moveAnimation,speed:()=>experience.moveSpeed});
 function cancelAction(){coach.cancel();actionEpoch++;busy=false;clearTimeout(defenseTimer);animations.cancel();learning.cancel();localParty?.cancel();computerParty?.cancel();document.querySelector('.pocket-score')?.classList.remove('score-target');if(typeof state!=='undefined')$('round-score').textContent=String(state.score);if(typeof mode!=='undefined'&&canResumeClock({mode,phase:state.phase,paused,modalOpen:overlayOpen(),hidden:document.hidden}))clock.start();}
 const profileGate=createRequestGate();
 let session=readSession(storage);
@@ -54,6 +54,7 @@ function applyExperience(){
  const appearance=APPEARANCES.find(a=>a.id===experience.appearance),companion=COMPANIONS.find(c=>c.id===experience.companion);
  document.body.dataset.appearance=appearance.id;
  for(const [variable,value] of Object.entries({'--paper':appearance.paper,'--board-light':appearance.light,'--board-dark':appearance.dark,'--board-frame':appearance.frame,'--green':appearance.green,'--green-dark':appearance.greenDark}))document.body.style.setProperty(variable,value);
+ $('move-speed').value=String(experience.moveSpeed);$('move-animation-button').textContent='Движение фигур: '+(experience.moveAnimation?'вкл':'выкл');$('move-animation-button').setAttribute('aria-pressed',String(experience.moveAnimation));
  $('appearance-choice').value=appearance.id;$('companion-choice').value=companion.id;
  $('home-companion-icon').innerHTML=pieceSvg(companion.piece,'w');$('home-companion-name').textContent=companion.name;
  $('companion-preview').innerHTML=pieceSvg(companion.piece,'w');$('companion-preview-name').textContent=companion.name;
@@ -81,8 +82,8 @@ let familyActive=false;
 const familyStores=new Map();
 function familyStore(){const id=session?.player.id||'';if(!familyStores.has(id))familyStores.set(id,createFamilyStore(scopedStorage));return familyStores.get(id);}
 let learningSync;
-const localParty=createLocalPartyUI({doc:document,getStorage:()=>scopedStorage,isCurrent:()=>mode==='local',blocked:()=>mode!=='local'||overlayOpen()||document.hidden,paused:()=>paused,toast});
-const computerParty=createLocalPartyUI({doc:document,getStorage:()=>scopedStorage,isCurrent:()=>mode==='computer',blocked:()=>mode!=='computer'||overlayOpen()||document.hidden,paused:()=>paused,toast,opponent:chooseComputerMove,storageKey:'mate-computer-party-v1'});
+const localParty=createLocalPartyUI({doc:document,getStorage:()=>scopedStorage,isCurrent:()=>mode==='local',blocked:()=>mode!=='local'||overlayOpen()||document.hidden,paused:()=>paused,toast,animations});
+const computerParty=createLocalPartyUI({doc:document,getStorage:()=>scopedStorage,isCurrent:()=>mode==='computer',blocked:()=>mode!=='computer'||overlayOpen()||document.hidden,paused:()=>paused,toast,opponent:chooseComputerMove,storageKey:'mate-computer-party-v1',animations});
 const learning=createLearningUI({doc:document,store:()=>familyActive?familyStore():learningStore(),animations,blocked:()=>mode!=='learn'||overlayOpen()||document.hidden,paused:()=>paused,toast,tone,home:()=>showHome(),narrate:text=>coach.say(text),voiceEnabled:()=>coach.enabled,isCurrent:()=>mode==='learn',collaborative:()=>familyActive,confirmSetupRestart,onProgress:()=>{if(!familyActive)void learningSync?.run();}});
 learningSync=createLearningSync({getSession:()=>session,getStore:learningStore,client:ranking,onChange:()=>updateLearningStatus(),onMerged:()=>{learning.refreshProgress();if(mode==='home')renderHome();}});
 let homeView='modes';
@@ -194,7 +195,7 @@ function renderBoard(){
   const dark=(file+rank)%2===1;
   const feminine=piece&&['r','p'].includes(piece.type);
   const name=piece?`${piece.color==='w'?(feminine?'белая':'белый'):(feminine?'чёрная':'чёрный')} ${pieceNames[piece.type]}`:'пустая клетка';
-  const classes=['square',dark?'dark':'',piece?'has-piece':'',selected===square?'selected':'',legal.includes(square)?'target':'',highlighted&&(highlighted.from===square||highlighted.to===square)?'last-move':'',piece?.type==='k'&&piece.color===chess.turn()&&chess.isCheck()?'king-check':''].filter(Boolean).join(' ');
+  const classes=['square',dark?'dark':'',piece?'has-piece':'',selected===square?'selected':'',legal.includes(square)?'target':'',highlighted?.from===square?'last-move last-from':highlighted?.to===square?'last-move last-to':'',piece?.type==='k'&&piece.color===chess.turn()&&chess.isCheck()?'king-check':''].filter(Boolean).join(' ');
   html+=`<button class="${classes}" data-square="${square}" aria-label="${square}, ${name}" aria-pressed="${selected===square}" tabindex="${focusSquare===square?0:-1}">${piece?pieceSvg(piece.type,piece.color):''}${crosses.has(square)?'<span class="blocked-cross" aria-hidden="true">×</span>':''}${file===0?`<span class="coordinate rank-label">${rank}</span>`:''}${rank===1?`<span class="coordinate file-label">${String.fromCharCode(97+file)}</span>`:''}</button>`;
  }
  $('board').innerHTML=html;$('board').classList.toggle('paused-board',paused);
@@ -285,7 +286,7 @@ async function onSquare(square){
  if(mode==='lesson'&&move!==current().mateMovesUci[0]){render();toast('Попробуем ход из учебного примера.');return;}
  if(outcome.result.kind==='illegal'){render();toast('Эта фигура так не ходит. Сердечко на месте.');return;}
  clock.pause();busy=true;const epoch=++actionEpoch,before=state.score;
- await animations.move({from:$('board').querySelector(`[data-square="${from}"]`),to:$('board').querySelector(`[data-square="${square}"]`),duration:1100});
+ await animations.move({from:$('board').querySelector(`[data-square="${from}"]`),to:$('board').querySelector(`[data-square="${square}"]`),board:$('board'),move:outcome.result.move});
  if(epoch!==actionEpoch)return;
  if(mode!=='lesson'&&outcome.state.lives<state.lives){await animations.heart($('hearts').querySelectorAll('.icon')[state.lives-1]);if(epoch!==actionEpoch)return;}
  if(mode==='lesson'){state={...state,phase:'review',feedback:outcome.result};}else{state=outcome.state;}
@@ -304,7 +305,7 @@ async function onSquare(square){
   defenseTimer=setTimeout(async()=>{
    if(epoch!==actionEpoch||!state.feedback||$('modal').open||paused)return;
    busy=true;const d=outcome.result.defense;
-   await animations.move({from:$('board').querySelector(`[data-square="${d.from}"]`),to:$('board').querySelector(`[data-square="${d.to}"]`),duration:1100});
+   await animations.move({from:$('board').querySelector(`[data-square="${d.from}"]`),to:$('board').querySelector(`[data-square="${d.to}"]`),board:$('board'),move:d});
    if(epoch!==actionEpoch)return;defenseShown=true;busy=false;render();
   },1000);
  }
@@ -419,6 +420,8 @@ $('player-button').onclick=showPlayer;$('ranking-button').onclick=showRanking;
 $('view-button').onclick=()=>{cancelAction();experience.detailed=!experience.detailed;applyExperience();if(!saveExperience(storage,experience))toast('Вид экрана изменён только на этот сеанс.');};
 $('sound-button').onclick=()=>{experience.sound=!experience.sound;if(experience.sound)tone('select');else sounds.mute();applyExperience();if(!saveExperience(storage,experience))toast('Настройка звука изменена только на этот сеанс.');};
 $('effects-button').onclick=()=>{cancelAction();experience.effects=!experience.effects;if(!experience.effects){clearTimeout(effectTimer);$('celebration').replaceChildren();document.querySelector('.board-frame').classList.remove('happy-board','try-board');}applyExperience();if(!saveExperience(storage,experience))toast('Настройка эффектов изменена только на этот сеанс.');};
+$('move-animation-button').onclick=()=>{cancelAction();experience.moveAnimation=!experience.moveAnimation;applyExperience();if(!saveExperience(storage,experience))toast('Настройка движения изменена только на этот сеанс.');};
+$('move-speed').onchange=event=>{const speed=Number(event.target.value);if(![2,4,8].includes(speed))return;cancelAction();experience.moveSpeed=speed;applyExperience();if(!saveExperience(storage,experience))toast('Скорость изменена только на этот сеанс.');};
 $('appearance-choice').onchange=event=>{const id=event.target.value;if(!APPEARANCES.some(a=>a.id===id))return;experience.appearance=id;applyExperience();$('appearance-status').textContent=saveExperience(storage,experience)?'Оформление сохранено в этом браузере.':'Оформление изменено только на этот сеанс.';};
 $('companion-choice').onchange=event=>{const id=event.target.value;if(!COMPANIONS.some(c=>c.id===id))return;experience.companion=id;applyExperience();$('appearance-status').textContent=saveExperience(storage,experience)?'Спутник сохранён в этом браузере. Голос помощника прежний.':'Спутник изменён только на этот сеанс.';};
 $('appearance-choice').innerHTML=APPEARANCES.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');

@@ -2,6 +2,18 @@ import test from 'node:test';import assert from 'node:assert/strict';
 import {createLocalPartyUI} from '../dist/js/local-party-ui.js';
 function fixture(options={}){const nodes=new Map(),node=()=>({dataset:{},classList:{toggle(){}},setAttribute(){},querySelector(){return node();},focus(){},replaceChildren(){this.children=[];},append(...v){this.children.push(...v);}});const doc={body:node(),getElementById(id){if(!nodes.has(id))nodes.set(id,node());return nodes.get(id);},createElement:node};let data=new Map(),current=true;const storage=()=>({getItem:k=>data.get(k),setItem:(k,v)=>data.set(k,v)});const ui=createLocalPartyUI({doc,getStorage:storage,isCurrent:()=>current,blocked:()=>false,paused:()=>false,toast(){},...options});return {ui,nodes,leaveMode(){current=false;},switchProfile(){data=new Map();}};}
 const play=(ui,m)=>{ui.square(m.slice(0,2));ui.square(m.slice(2,4));};
+test('accepted moves persist during flight, rapid input is blocked and last endpoints survive reload',async()=>{
+ let finish;const calls=[];const animations={move:args=>{calls.push(args);return new Promise(r=>finish=r);},cancel(){}};
+ const {ui,nodes}=fixture({animations});ui.start();play(ui,'e2e4');assert.equal(calls.length,1);assert.equal(calls[0].move.from,'e2');assert.equal(calls[0].move.to,'e4');play(ui,'e7e5');assert.equal(calls.length,1);
+ finish();for(let i=0;i<8;i++)await Promise.resolve();assert.match(nodes.get('board').innerHTML,/last-from[^>]+data-square="e2"/);assert.match(nodes.get('board').innerHTML,/last-to[^>]+data-square="e4"/);ui.start();assert.match(nodes.get('board').innerHTML,/last-to[^>]+data-square="e4"/);
+});
+test('computer waits for its cancellable pause before choosing and animates the legal reply',async()=>{
+ let release;let chosen=0;const calls=[];const animations={move:args=>{calls.push(args.move);return Promise.resolve();},pause:({duration})=>{assert.equal(duration,350);return new Promise(r=>release=r);},cancel(){}};
+ const {ui,nodes}=fixture({animations,opponent:()=>{chosen++;return 'e7e5';}});ui.start();play(ui,'e2e4');for(let i=0;i<8;i++)await Promise.resolve();assert.equal(chosen,0);assert.equal(typeof release,'function');release();for(let i=0;i<12;i++)await Promise.resolve();assert.equal(chosen,1);assert.equal(calls.length,2);assert.equal(calls[1].from,'e7');assert.match(nodes.get('board').innerHTML,/last-to[^>]+data-square="e5"/);
+});
+test('cancelling a committed flight displays its saved position without a stale repaint',async()=>{
+ let finish;const {ui,nodes}=fixture({animations:{move:()=>new Promise(r=>finish=r),cancel(){}}});ui.start();play(ui,'e2e4');ui.cancel();assert.match(nodes.get('board').innerHTML,/e4, белая пешка/);const before=nodes.get('board').innerHTML;finish();for(let i=0;i<8;i++)await Promise.resolve();assert.equal(nodes.get('board').innerHTML,before);
+});
 test('local UI restores device game and keeps a new profile separate',()=>{
  const {ui,nodes,switchProfile}=fixture();ui.start();play(ui,'e2e4');assert.match(nodes.get('board').innerHTML,/e4, белая пешка/);ui.start();assert.match(nodes.get('board').innerHTML,/e4, белая пешка/);switchProfile();ui.start();assert.match(nodes.get('board').innerHTML,/e2, белая пешка/);
 });

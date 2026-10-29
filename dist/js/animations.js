@@ -5,7 +5,7 @@ const center = element => {
 };
 const transform = (x,y,scale=1,rotation=0) => `translate(${x}px, ${y}px) scale(${scale}) rotate(${rotation}deg)`;
 
-export function createAnimations({enabled=()=>true,reduced=()=>false}={}) {
+export function createAnimations({enabled=()=>true,reduced=()=>false,motionEnabled=()=>true,speed=()=>4,setTimer=setTimeout,clearTimer=clearTimeout}={}) {
   const jobs = new Set();
   const allowed = () => enabled() && !reduced() && typeof document !== 'undefined';
 
@@ -85,22 +85,33 @@ export function createAnimations({enabled=()=>true,reduced=()=>false}={}) {
   }
 
   return {
-    move({from,to,pieceHtml,duration=1100}={}) {
-      const origin=center(from), destination=center(to);
-      if (!allowed() || !origin || !destination) return Promise.resolve();
-      return run(async job => {
-        const layer=overlay(job);
-        const source=from.querySelector?.('.piece') || from.querySelector?.('svg');
-        const html=pieceHtml || source?.outerHTML;
-        if (!html) return;
-        const piece=sprite(layer,html,Math.min(origin.width,origin.height)*0.84,origin.x,origin.y);
-        if (source) {
-          const visibility=source.style.visibility;
-          source.style.visibility='hidden';
-          job.add(()=>{source.style.visibility=visibility;});
-        }
-        await job.animate(piece,[{transform:transform(0,0)},{transform:transform(destination.x-origin.x,destination.y-origin.y)}],{duration,easing:'cubic-bezier(.25,.7,.3,1)',fill:'forwards'});
-      });
+    pause({duration=350}={}) {
+      return run(job=>new Promise(done=>{const timer=setTimer(done,duration);job.add(()=>{clearTimer(timer);done();});}));
+    },
+    move({from,to,pieceHtml,board,move}={}) {
+      if (!allowed() || !motionEnabled()) return Promise.resolve();
+      const fly=(from,to,pieceHtml)=>{
+        const origin=center(from),destination=center(to);
+        if(!origin||!destination||origin.width<=0)return Promise.resolve();
+        const rate=[2,4,8].includes(speed())?speed():4;
+        const duration=Math.max(120,Math.min(2000,Math.hypot(destination.x-origin.x,destination.y-origin.y)/origin.width/rate*1000));
+        return run(async job => {
+          const layer=overlay(job),source=from.querySelector?.('.piece') || from.querySelector?.('svg');
+          const html=pieceHtml || source?.outerHTML;
+          if (!html) return;
+          const piece=sprite(layer,html,Math.min(origin.width,origin.height)*0.84,origin.x,origin.y);
+          piece.setAttribute('data-move-flight','true');
+          if (source) {const visibility=source.style.visibility;source.style.visibility='hidden';job.add(()=>{source.style.visibility=visibility;});}
+          if(typeof window!=='undefined') {const resized=()=>job.finish(true);window.addEventListener('resize',resized,{once:true});job.add(()=>window.removeEventListener('resize',resized));}
+          await job.animate(piece,[{transform:transform(0,0)},{transform:transform(destination.x-origin.x,destination.y-origin.y)}],{duration,easing:'linear',fill:'forwards'});
+        });
+      };
+      const flights=[fly(from,to,pieceHtml)];
+      if(board&&move&&/[kq]/.test(move.flags||'')){
+        const rank=move.from[1],short=move.flags.includes('k');
+        flights.push(fly(board.querySelector(`[data-square="${short?'h':'a'}${rank}"]`),board.querySelector(`[data-square="${short?'f':'d'}${rank}"]`)));
+      }
+      return Promise.all(flights).then(()=>{});
     },
     stars({from,to,amount=9,before=0,after=before+amount,counter}={}) {
       const origin=center(from), destination=center(to);
