@@ -67,7 +67,7 @@ export async function setupChallengeAcceptance({origin,entry,scenario,login}){
 
  await scenario(origin,entry,'assembly: explicit restart clears only the current attempt, new clean attempt can be independent',async page=>{
   const before=await saved(page);await open(page);const pieces={};for(let i=0;i<4;i++)await place(page,pieces);await page.locator('#hint-button').click();
-  await page.locator('[data-setup-restart]').click();await board(page,{});assert.equal((await saved(page)).resume.setup.assisted,false);assert.equal((await saved(page)).achievements[fact],undefined);
+  await page.locator('[data-setup-restart]').click();await page.locator('#setup-reset-confirm').click();await board(page,{});assert.equal((await saved(page)).resume.setup.assisted,false);assert.equal((await saved(page)).achievements[fact],undefined);
   await finish(page,{});assert.deepEqual((await saved(page)).achievements[fact],{assisted:false,independent:true});assert.deepEqual(withoutNew(await saved(page)),withoutNew(before));
  },options);
 

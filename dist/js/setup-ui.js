@@ -2,7 +2,7 @@ import {pieceSvg,pieceNames,icon} from './pieces.js';
 import {SETUP_LESSON,SETUP_EXERCISE,createSetup,restoreSetup,setupOrder,setupPieces,setupOptions,placeSetup,helpSetup} from './setup-challenge.js';
 import {recordLearning,rememberHelp,mergeLearning} from './learning-progress.js';
 
-export function createSetupUI({doc,store,blocked,paused,toast,tone,home,onProgress=()=>{},collaborative=()=>false,isCurrent=()=>true}){
+export function createSetupUI({doc,store,blocked,paused,toast,tone,home,onProgress=()=>{},collaborative=()=>false,isCurrent=()=>true,confirmSetupRestart=restart=>restart()}){
  const $=id=>doc.getElementById(id);
  let state=null,progress=null,hinted=false,focus='a1',knownAssisted=false,storageWarned=false;
  const active=()=>state&&state.squares.length<32&&!blocked()&&!paused();
@@ -42,7 +42,7 @@ export function createSetupUI({doc,store,blocked,paused,toast,tone,home,onProgre
   if(!paused()&&!done){const sample=doc.createElement('span');sample.className='placement-sample';sample.setAttribute('role','img');sample.setAttribute('aria-label',name);sample.dataset.setupPiece=piece;sample.innerHTML=pieceSvg(piece.toLowerCase(),white?'w':'b');$('message').append(sample);}
   $('message').append(p);
   if(!paused()){
-   const restart=doc.createElement('button');restart.className='secondary-button';restart.textContent='Начать заново с пустой доски';restart.dataset.setupRestart='true';restart.onclick=()=>{if(blocked()||paused())return;refresh();fresh();save();render();};$('message').append(restart);
+   const restart=doc.createElement('button');restart.className='secondary-button';restart.textContent='Начать заново с пустой доски';restart.dataset.setupRestart='true';restart.onclick=()=>{if(blocked()||paused())return;const attempt=state,owner=store();confirmSetupRestart(()=>{if(store()!==owner||state!==attempt||!isCurrent()||blocked()||paused())return;refresh();fresh();save();render();});};$('message').append(restart);
   }
   $('primary-button').hidden=false;$('primary-button').disabled=false;$('primary-button').innerHTML=(paused()?'Продолжить':done?'К выбору режима':'Продолжить позже')+' '+icon('arrow');
   $('mission-note').textContent=done?'Результат относится только к этой сборке. Другие занятия не засчитываются.':(count>0&&count%4===0?'Ещё четыре фигуры на месте. Можно отдохнуть и продолжить позже.':'Можно остановиться в любой момент. Каждая фигура сохраняется.')+(state.assisted?' Эта попытка — с помощью.':'');
@@ -61,7 +61,9 @@ export function createSetupUI({doc,store,blocked,paused,toast,tone,home,onProgre
  return {
   start(resume){progress=store().get();knownAssisted=!!progress.achievements[SETUP_EXERCISE.id]?.assisted;const r=progress.resume;
    // Only the validated, current store may supply a continuation.
-   state=resume&&r?.lessonId===SETUP_LESSON&&resume.seed===r.seed?restoreSetup(r.setup):null;
+   // Missing routing metadata must never destroy an existing validated draft.
+   // false is the host's explicit, confirmed request for a fresh attempt.
+   state=resume!==false&&r?.lessonId===SETUP_LESSON&&(resume===undefined||resume?.seed===r.seed)?restoreSetup(r.setup):null;
    if(!state)fresh();hinted=false;save();render();},render,square,
   hint(){if(!active())return;refresh();state=helpSetup(state);progress=rememberHelp(progress,SETUP_EXERCISE.id);hinted=true;save();render();tone('hint');},
   showSolution(){if(!active())return;this.hint();square(setupOptions(state)[0]);},

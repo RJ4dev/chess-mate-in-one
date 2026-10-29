@@ -12,9 +12,9 @@ import {familyTurn} from './family.js';
 
 // The controller owns no authentication or ranking scores. Every async answer
 // belongs to one lesson epoch, cancelled by the host before navigation/profile changes.
-export function createLearningUI({doc,store,animations,blocked,paused,toast,tone,home,onProgress=()=>{},narrate=()=>{},voiceEnabled=()=>false,isCurrent=()=>true,collaborative=()=>false}){
+export function createLearningUI({doc,store,animations,blocked,paused,toast,tone,home,onProgress=()=>{},narrate=()=>{},voiceEnabled=()=>false,isCurrent=()=>true,collaborative=()=>false,confirmSetupRestart}){
  const $=id=>doc.getElementById(id),gate=createRequestGate();
- const setup=createSetupUI({doc,store,blocked,paused,toast,tone,home,onProgress,collaborative,isCurrent});let assembling=false;
+ const setup=createSetupUI({doc,store,blocked,paused,toast,tone,home,onProgress,collaborative,isCurrent,confirmSetupRestart});let assembling=false;
  let promotion=null;
  let lessonState,progress=store().get(),selected=null,focus='a1',busy=false,seed=0,hintShown=false,storageWarned=false;
  const exercise=()=>exerciseById(lessonState.steps[Math.min(lessonState.index,lessonState.steps.length-1)].exerciseId);

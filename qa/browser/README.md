@@ -94,3 +94,5 @@ Black-pawn cases extend this to 24→28→32, checking all 24 supplied pieces, a
 These tests use fixtures only. Physical Android, child comprehension, production synchronization and genuine two-device acceptance remain separate.
 
 Independent setup cases start empty, place all 32 from shuffled prompts using literal interchangeable targets, reject errors/overlaps, distinguish whole-attempt assistance, restore the actual prefix/help, isolate two unfinished profiles, test explicit restart, keyboard/pause/exit/320px and unsupported setup-v1 groups with legacy ACK. No automatic example or skipped-lesson awards. Physical acceptance and production sync remain separate.
+
+Reentry regressions use a real page reload and the lesson card itself, rather than the recommended-continue shortcut. Guest and profile attempts are tested both clean and helped, checking stored data before the card, non-destructive choice/cancel/home, exact resumed cells, final assistance, confirmed reset without loss of achievements, and stale confirmation across A→B→A. External requests remain fixture-only.

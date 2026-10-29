@@ -354,7 +354,7 @@ try {
     await blackBackRankAcceptance({origin, entry, scenario, login});
     await blackPawnsAcceptance({origin, entry, scenario, login});
     await setupChallengeAcceptance({origin, entry, scenario, login});
-    await setupReentryAcceptance({origin, entry, scenario});
+    await setupReentryAcceptance({origin, entry, scenario, login});
   }
   report.status = 'passed';
 } catch (error) {
