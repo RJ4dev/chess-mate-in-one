@@ -38,3 +38,10 @@ const whiteBackRank=[
 BOARD_EXERCISES.push(...whiteBackRank.map(([name,square,placePiece,taskTitle,prompt,hint],i)=>({
  ...make('build-white-'+name,Object.fromEntries(whiteBackRank.slice(0,i).map(([,sq,piece])=>[sq,piece])),[square],taskTitle,prompt,hint,i===7?'Первый ряд белых собран! Пешки и чёрные фигуры ещё впереди.':'Фигура на месте. Постепенно собираем первый ряд белых.'),goal:'placePiece',placePiece
 })));
+const pawnNeighbours=['левой ладьёй','левым конём','левым слоном','ферзём','королём','правым слоном','правым конём','правой ладьёй'];
+BOARD_EXERCISES.push(...[...'abcdefgh'].map((file,i)=>{
+ const square=file+'2',intro=i===0?'Первый ряд белых здесь уже стоит. Добавим перед ним восемь пешек. ':i===4?'Первый ряд и четыре пешки здесь уже поставлены. Добавим остальные четыре. ':'';
+ const prompt=intro+`Поставь белую пешку перед ${pawnNeighbours[i]}, на второй ряд снизу.`;
+ const pieces=Object.fromEntries([...whiteBackRank.map(([,sq,piece])=>[sq,piece]),...[...'abcdefgh'].slice(0,i).map(f=>[f+'2','P'])]);
+ return {...make('build-pawn-'+file,pieces,[square],`Пешка перед ${pawnNeighbours[i]}`,prompt,`Белые пешки стоят на втором ряду. Сейчас нужна клетка ${square}, перед ${pawnNeighbours[i]}.`,i===7?'Все восемь белых пешек на месте. Белая сторона расставлена; чёрные фигуры ещё впереди.':'Пешка на месте. Постепенно заполняем второй ряд белых.'),goal:'placePiece',placePiece:'P'};
+}));

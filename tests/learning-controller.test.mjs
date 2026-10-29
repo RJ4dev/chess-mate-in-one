@@ -11,6 +11,19 @@ function controller(store,animations={move:async()=>{}},narrate=()=>{},voiceEnab
  const ui=createLearningUI({doc,store,animations,blocked:()=>false,paused:()=>false,toast(){},tone(){},home(){},narrate,voiceEnabled,isCurrent,collaborative});
  return Object.assign(ui,{nodes});
 }
+test('pawn prefix and help restore durably while direct later entry grants no skipped lessons',async()=>{
+ const map=new Map(),storage={getItem:k=>map.get(k),setItem:(k,v)=>map.set(k,v)};
+ let store=createLearningStore(storage),ui=controller(()=>store);
+ const count=()=>((ui.nodes.get('board').innerHTML||'').match(/has-piece/g)||[]).length;
+ ui.start('board-build-pawns-1');assert.equal(count(),8);ui.primary();ui.primary();await ui.square('b2');ui.primary();assert.equal(count(),10);
+ ui.hint();ui.cancel();store=createLearningStore(storage);ui=controller(()=>store);ui.start('board-build-pawns-1',store.get().resume);
+ assert.equal(count(),10);await ui.square('c2');assert.deepEqual(store.get().achievements['build-pawn-c'],{assisted:true,independent:false});
+ ui.primary();await ui.square('d2');ui.primary();assert.equal(count(),12);
+ const fresh=createLearningStore(null);ui=controller(()=>fresh);ui.start('board-build-pawns-2');assert.equal(count(),12);
+ ui.primary();ui.primary();await ui.square('f2');ui.primary();await ui.square('g2');ui.primary();await ui.square('h2');ui.primary();assert.equal(count(),16);
+ assert.ok(fresh.get().completed.includes('board-build-pawns-2'));assert.ok(!fresh.get().completed.includes('board-build-pawns-1'));
+ assert.equal(fresh.get().achievements['build-pawn-a'],undefined);assert.equal(fresh.get().achievements['build-white-king'],undefined);
+});
 test('back rank prefix and assistance survive a real reload and direct later entry grants no skipped facts',async()=>{
  const map=new Map(),storage={getItem:k=>map.get(k),setItem:(k,v)=>map.set(k,v)};
  let store=createLearningStore(storage),ui=controller(()=>store);

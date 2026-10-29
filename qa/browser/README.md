@@ -66,8 +66,22 @@ fixtures acknowledge genuine legacy events in memory. Tests require that legacy
 sync runs, the new local facts survive, and no unsupported foundation event is
 sent. These are isolated protocol checks, not production or two-device trials.
 
-Новые уроки спасения фигуры: ещё14 сценариев для двух сборок (всего48). Проверяются оба цвета, альтернативные уходы, взятие нападающего другой фигурой, ошибка/помощь/reload, реальная незавершённая анимация при смене профиля, клавиатура/пауза и capability-границы safety-v1. Прежние награды и факты защищены общей проверкой.
+## Extended course matrix
 
-Урок дополнения расстановки: ещё12сценариев, всего60наобаentrypoints. На каждомшаге31→32фигуры,образецвиден,занятыеклеткинепереписываются;естьпроверкиошибки/помощи/reload/двухпрофилей/unsupportedboard-v1/клавиатуры/паузыи320px. Встарыхrescueсценарияхпроверенаисправленнаяподписьreview/finished.
+Each increment keeps all earlier scenarios. Counts below cover both entry points.
 
-Сборка первого ряда белых: ещё14сценариев, всего74длядвухentrypoints. Проверяютсяточныенакопленныепрефиксы0→4→8,ошибка/retry,help/reload,прямойвходбезприсвоенияпропущенныхфактов,двапрофиля,capabilityграницы,keyboard/pause/320px. Существующиеplacementсценариипроверяютисправленныеподписиdemo/feedback.
+| Increment | Added scenarios | Cumulative total |
+|---|---:|---:|
+| Computer and foundations | 34 | 34 |
+| Ordinary-piece rescue | 14 | 48 |
+| One missing initial piece | 12 | 60 |
+| White back rank | 14 | 74 |
+| Eight white pawns | 14 | 88 |
+
+Rescue cases cover both colours, alternative escapes, taking the attacker with another piece, mistakes, help, reload, a real pending animation cancelled on profile change, keyboard, pause and unsupported `safety-v1` filtering.
+
+Placement cases cover the visible sample, 31→32 pieces, occupied-square errors, retry, help, reload, two profiles, unsupported `board-v1`, keyboard, pause and 320 px layout. Rescue review/finished captions and placement demo/feedback captions are checked against their enabled actions.
+
+Back-rank cases check literal accumulated prefixes 0→4→8, errors, retry, help across reload, direct entry without skipped facts, two profiles and capability boundaries. Pawn cases extend this to 8→12→16, checking all eight second-rank squares and the unchanged first rank. They repeat the direct-entry, profile, assistance, unsupported-sync, keyboard, pause and mobile-width boundaries.
+
+These tests use fixtures only. Physical Android, child comprehension, production synchronization and genuine two-device acceptance remain separate.
