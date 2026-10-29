@@ -14,6 +14,7 @@ import {whitePawnsAcceptance} from './white-pawns.mjs';
 import {blackBackRankAcceptance} from './black-back-rank.mjs';
 import {blackPawnsAcceptance} from './black-pawns.mjs';
 import {setupChallengeAcceptance} from './setup-challenge.mjs';
+import {setupReentryAcceptance} from './setup-reentry.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const resultsDir = fileURLToPath(new URL('./results/', import.meta.url));
@@ -169,6 +170,7 @@ async function scenario(origin, entry, name, run, options = {}) {
   const unexpected = [], errors = [], mocked = [], events = [];
   const seed = {...fixture, ...options.seed};
   const allowedLearning = (options.learningProfiles || []).map(id => `player:qa-${id}:mate-learning-v1`);
+  if(options.guestLearning)allowedLearning.push('mate-learning-v1');
   const remoteLearning = {version: 1, achievements: {}, completed: [], seen: [], resume: null};
   // Installed on the context BEFORE any page/navigation; no production forwarding.
   await context.route('**/*', async route => {
@@ -352,6 +354,7 @@ try {
     await blackBackRankAcceptance({origin, entry, scenario, login});
     await blackPawnsAcceptance({origin, entry, scenario, login});
     await setupChallengeAcceptance({origin, entry, scenario, login});
+    await setupReentryAcceptance({origin, entry, scenario});
   }
   report.status = 'passed';
 } catch (error) {
