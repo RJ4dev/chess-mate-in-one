@@ -26,12 +26,13 @@ export function createLearningUI({doc,store,animations,blocked,paused,toast,tone
  function board(){
   const s=lessonState,e=exercise(),fen=['review','feedback','finished'].includes(s.phase)&&s.result?.fenAfter?s.result.fenAfter:e.fen;
   const study=e.positionKind==='boardStudy',chess=study?null:new Chess(fen),legal=!study&&selected&&active()?chess.moves({square:selected,verbose:true}).map(m=>m.to):[];
+  const studyPieces=study&&e.goal==='placePiece'&&(s.phase==='finished'||s.phase==='review'&&s.result?.correct)?{...e.pieces,[s.result?.square||e.answers[0]]:e.placePiece}:e.pieces;
   const guide=study?{kind:'none'}:kingGuide(fen),crosses=new Set(guide.kind==='mate'||guide.kind==='stalemate'?guide.blocked:[]),move=s.result?.move;
   const rescueSquare=e.goal==='savePiece'?(move?.from===e.threatenedSquare?move.to:e.threatenedSquare):null;
   const restore=doc.activeElement?.dataset.square;
   let html='';
   for(let rank=8;rank>=1;rank--)for(let file=0;file<8;file++){
-   const sq=String.fromCharCode(97+file)+rank,raw=study?e.pieces[sq]:null,p=study?(raw?{type:raw.toLowerCase(),color:raw===raw.toUpperCase()?'w':'b'}:null):chess.get(sq),feminine=p&&['r','p'].includes(p.type),color=p?.color==='w'?(feminine?'белая':'белый'):(feminine?'чёрная':'чёрный');
+   const sq=String.fromCharCode(97+file)+rank,raw=study?studyPieces[sq]:null,p=study?(raw?{type:raw.toLowerCase(),color:raw===raw.toUpperCase()?'w':'b'}:null):chess.get(sq),feminine=p&&['r','p'].includes(p.type),color=p?.color==='w'?(feminine?'белая':'белый'):(feminine?'чёрная':'чёрный');
    const classes=['square',(file+rank)%2?'dark':'',p?'has-piece':'',sq===selected?'selected':'',legal.includes(sq)?'target':'',(move&&(move.from===sq||move.to===sq)||study&&s.result?.correct&&s.result.square===sq)?'last-move':'',chess&&p?.type==='k'&&p.color===chess.turn()&&chess.isCheck()?'king-check':''].filter(Boolean).join(' ');
    html+=`<button class="${classes}" data-square="${sq}" aria-label="${sq}, ${p?color+' '+pieceNames[p.type]:'пустая клетка'}${e.targetSquare===sq?', цель задания':rescueSquare===sq?', спасаемая фигура':''}" aria-pressed="${sq===selected}" tabindex="${sq===focus?0:-1}">${p?pieceSvg(p.type,p.color):''}${(e.targetSquare===sq||rescueSquare===sq)&&['demo','playing','feedback'].includes(s.phase)?'<span class="lesson-goal" aria-hidden="true">★</span>':''}${crosses.has(sq)?'<span class="blocked-cross" aria-hidden="true">×</span>':''}${file===0?`<span class="coordinate rank-label">${rank}</span>`:''}${rank===1?`<span class="coordinate file-label">${String.fromCharCode(97+file)}</span>`:''}</button>`;
   }
@@ -56,7 +57,7 @@ export function createLearningUI({doc,store,animations,blocked,paused,toast,tone
   $('mission-tag').textContent=stage==='show'?'СМОТРИМ ВМЕСТЕ':stage==='guided'?'ПРОБУЕМ ВМЕСТЕ':stage==='independent'?'ПОПРОБУЙ САМ':'ПРАКТИКУЕМСЯ';
   if(shared)$('mission-tag').textContent=s.phase==='finished'?'СЕМЕЙНАЯ ГЛАВА':familyTurn(s.index);
   $('earned').hidden=true;$('defense-button').hidden=true;
-  $('solution-button').hidden=!(hintShown&&s.phase==='playing');$('solution-button').textContent=study?'Показать клетку':'Показать ход';
+  $('solution-button').hidden=!(hintShown&&s.phase==='playing');$('solution-button').textContent=e.goal==='placePiece'?'Поставить фигуру':study?'Показать клетку':'Показать ход';
   $('hint-button').hidden=false;$('hint-button').disabled=!active();$('hint-dots').textContent=hintShown?'●':'○';
   $('hint-text').hidden=!(hintShown&&s.phase==='playing');$('hint-text').textContent=e.hint||lesson.hint||(e.goal==='save'?'Можно уйти, взять нападающую фигуру или закрыть линию. Точки — законные ходы.':'Выбрана одна подходящая фигура. Найди клетку, откуда она нападёт на короля.');
   $('pause-button').disabled=s.phase==='finished';$('training-button').hidden=true;
@@ -69,7 +70,11 @@ export function createLearningUI({doc,store,animations,blocked,paused,toast,tone
   if(shared&&s.phase==='finished'){title='Семейная глава пройдена!';text='Спасибо за игру вместе! Участие сохранено отдельно от личных уроков и наград.';}
   if(promotion&&!paused()){title='Кем станет пешка?';text='Выбери новую фигуру. Ход завершится после выбора.';button='';}
   if(shared&&!paused()&&s.phase!=='finished')title=familyTurn(s.index)+' · '+title;
-  $('message').replaceChildren();const h=doc.createElement('h2'),p=doc.createElement('p');h.textContent=title;p.textContent=text;$('message').append(h,p);
+  $('message').replaceChildren();const h=doc.createElement('h2'),p=doc.createElement('p');h.textContent=title;p.textContent=text;$('message').append(h);
+  if(e.goal==='placePiece'&&['demo','playing','feedback'].includes(s.phase)&&!paused()){
+   const sample=doc.createElement('span');sample.className='placement-sample';sample.setAttribute('role','img');sample.setAttribute('aria-label',e.taskTitle);sample.innerHTML=pieceSvg(e.placePiece.toLowerCase(),e.placePiece===e.placePiece.toUpperCase()?'w':'b');$('message').append(sample);
+  }
+  $('message').append(p);
   if(promotion&&!paused()){
    const request=promotion;
    for(const [type,name] of [['q','Ферзь'],['r','Ладья'],['b','Слон'],['n','Конь']]){
@@ -81,7 +86,7 @@ export function createLearningUI({doc,store,animations,blocked,paused,toast,tone
   $('primary-button').hidden=!button;$('primary-button').innerHTML=button+' '+icon('arrow');$('primary-button').disabled=busy;
   $('mission-note').textContent=lesson.textOnly?'Здесь учимся с текстовыми подсказками. Можно ошибаться и пробовать снова.':'Можно ошибаться и пробовать снова. Учебные задания не меняют рейтинг.';
   if(shared)$('mission-note').textContent='Передавайте устройство по очереди. Помогать друг другу можно. Это семейное участие, без личных звёзд и значков.';
-  $('board-caption').textContent=e.goal==='savePiece'?'Звёздочка — фигура, которую нужно спасти. Нажми на свою фигуру, затем на клетку.':study?'Нажми на одну подходящую клетку. Фигуры здесь не передвигаются.':busy?'Фигура делает ход…':selected?'Выбери клетку с точкой':s.phase==='demo'?'Сначала посмотрим, затем попробуешь ты':s.phase==='review'?'Посмотри, что изменилось на доске':'Нажми на свою фигуру, затем на клетку';
+  $('board-caption').textContent=paused()?'Пауза':e.goal==='placePiece'?(['review','finished'].includes(s.phase)?'Фигура на месте. Посмотри на полную расстановку.':'Нажми на пустое начальное место показанной фигуры.'):e.goal==='savePiece'&&['review','finished','feedback'].includes(s.phase)?'Посмотри на позицию и объяснение. Продолжить можно кнопкой под ним.':e.goal==='savePiece'?'Звёздочка — фигура, которую нужно спасти. Нажми на свою фигуру, затем на клетку.':study?'Нажми на одну подходящую клетку. Фигуры здесь не передвигаются.':busy?'Фигура делает ход…':selected?'Выбери клетку с точкой':s.phase==='demo'?'Сначала посмотрим, затем попробуешь ты':s.phase==='review'?'Посмотри, что изменилось на доске':'Нажми на свою фигуру, затем на клетку';
  }
  async function answer(value){
   if(busy||blocked()||paused())return;

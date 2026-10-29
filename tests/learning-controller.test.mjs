@@ -11,6 +11,26 @@ function controller(store,animations={move:async()=>{}},narrate=()=>{},voiceEnab
  const ui=createLearningUI({doc,store,animations,blocked:()=>false,paused:()=>false,toast(){},tone(){},home(){},narrate,voiceEnabled,isCurrent,collaborative});
  return Object.assign(ui,{nodes});
 }
+test('placement adds a visible requested piece only on success and help survives durable reload',async()=>{
+ const map=new Map(),storage={getItem:k=>map.get(k),setItem:(k,v)=>map.set(k,v)};
+ let store=createLearningStore(storage),ui=controller(()=>store);
+ ui.start('board-placement',{lessonId:'board-placement',index:2,seed:0});
+ assert.match(ui.nodes.get('message').children.map(x=>x.innerHTML||'').join(''),/svg/);
+ assert.match(ui.nodes.get('board').innerHTML,/d1, пустая клетка/);
+ await ui.square('e1');assert.match(ui.nodes.get('board').innerHTML,/d1, пустая клетка/);
+ assert.equal(store.get().achievements['place-white-queen'],undefined);ui.primary();ui.hint();ui.cancel();
+ store=createLearningStore(storage);ui=controller(()=>store);ui.start('board-placement',store.get().resume);
+ await ui.square('d1');assert.match(ui.nodes.get('board').innerHTML,/d1, белый ферзь/);
+ assert.deepEqual(store.get().achievements['place-white-queen'],{assisted:true,independent:false});
+ ui.primary();await ui.square('e8');ui.primary();assert.match(ui.nodes.get('board').innerHTML,/e8, чёрный король/);
+ assert.equal((ui.nodes.get('board').innerHTML.match(/has-piece/g)||[]).length,32);
+});
+test('rescue review and summary captions do not invite another move or refer to a hidden star',async()=>{
+ const store=createLearningStore(null),ui=controller(()=>store);ui.start('piece-safety-2',{lessonId:'piece-safety-2',index:3});
+ await ui.square('c7');await ui.square('d5');
+ assert.doesNotMatch(ui.nodes.get('board-caption').textContent,/Звёздочка|Нажми на свою/);
+ ui.primary();assert.doesNotMatch(ui.nodes.get('board-caption').textContent,/Звёздочка|Нажми на свою/);
+});
 test('rescue controller marks the threatened piece and preserves help through reload and profiles',async()=>{
  const map=new Map(),storage={getItem:k=>map.get(k),setItem:(k,v)=>map.set(k,v)};
  let a=createLearningStore(playerStorage(storage,'alice'));const b=createLearningStore(playerStorage(storage,'bob'));let current=a,ui=controller(()=>current);
