@@ -78,6 +78,7 @@ Each increment keeps all earlier scenarios. Counts below cover both entry points
 | White back rank | 14 | 74 |
 | Eight white pawns | 14 | 88 |
 | Black back rank | 14 | 102 |
+| Eight black pawns | 14 | 116 |
 
 Rescue cases cover both colours, alternative escapes, taking the attacker with another piece, mistakes, help, reload, a real pending animation cancelled on profile change, keyboard, pause and unsupported `safety-v1` filtering.
 
@@ -86,5 +87,7 @@ Placement cases cover the visible sample, 31→32 pieces, occupied-square errors
 Back-rank cases check literal accumulated prefixes 0→4→8, errors, retry, help across reload, direct entry without skipped facts, two profiles and capability boundaries. Pawn cases extend this to 8→12→16, checking all eight second-rank squares and the unchanged first rank. They repeat the direct-entry, profile, assistance, unsupported-sync, keyboard, pause and mobile-width boundaries.
 
 Black back-rank cases extend this to 16→20→24, checking the literal white side, each black piece and the visible board orientation (White below, a-file left). Direct entry grants no skipped white or black facts. The same assistance, reload, profiles, unsupported-sync, retry, keyboard, pause and mobile-width boundaries apply.
+
+Black-pawn cases extend this to 24→28→32, checking all 24 supplied pieces, all eight seventh-rank targets and White-below screen geometry. Direct chapter-2 entry must not award prior white/black chapters. They also cover assistance/reload, two profiles, unsupported capabilities, occupied retry, keyboard/pause and 320px. The completed supplied position is not independent full-board assembly from empty.
 
 These tests use fixtures only. Physical Android, child comprehension, production synchronization and genuine two-device acceptance remain separate.
