@@ -15,6 +15,7 @@ import {blackBackRankAcceptance} from './black-back-rank.mjs';
 import {blackPawnsAcceptance} from './black-pawns.mjs';
 import {setupChallengeAcceptance} from './setup-challenge.mjs';
 import {setupReentryAcceptance} from './setup-reentry.mjs';
+import {computerLevelsAcceptance} from './computer-levels.mjs';
 import {motionAcceptance} from './motion.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
@@ -360,6 +361,7 @@ try {
     await setupChallengeAcceptance({origin, entry, scenario, login});
     await setupReentryAcceptance({origin, entry, scenario, login});
     await motionAcceptance({origin,entry,scenario,release});
+    await computerLevelsAcceptance({origin,entry,scenario,release,login});
   }
   report.status = 'passed';
 } catch (error) {

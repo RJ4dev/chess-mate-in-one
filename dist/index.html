@@ -34,7 +34,7 @@
      <button class="mode-card mode-mate" id="choose-mate"><span class="mode-symbol" aria-hidden="true">♜</span><span><strong>Мат за один ход</strong><small>Любимая игра · звёзды и рейтинг</small></span><span aria-hidden="true">→</span></button>
      <button class="mode-card mode-practice" id="choose-practice"><span class="mode-symbol" aria-hidden="true">✦</span><span><strong>Мини-игры</strong><small>Найди шах или спаси короля</small></span><span aria-hidden="true">→</span></button>
      <button class="mode-card" id="choose-local"><span class="mode-symbol" aria-hidden="true">♔</span><span><strong>Партия вдвоём</strong><small>На одном устройстве · без рейтинга</small></span><span aria-hidden="true">→</span></button>
-     <button class="mode-card" id="choose-computer"><span class="mode-symbol" aria-hidden="true">♞</span><span><strong>Против компьютера</strong><small>Простой соперник · ты играешь белыми</small></span><span aria-hidden="true">→</span></button>
+     <button class="mode-card" id="choose-computer"><span class="mode-symbol" aria-hidden="true">♞</span><span><strong>Против компьютера</strong><small id="computer-description">Ученик · ты играешь белыми</small></span><span aria-hidden="true">→</span></button>
      <button class="mode-card" id="choose-family"><span class="mode-symbol" aria-hidden="true">♡</span><span><strong>Семейная глава</strong><small>Задания по очереди · помощь друг другу</small></span><span aria-hidden="true">→</span></button>
     </div>
     <button id="continue-learning" class="primary-button" hidden>Продолжить занятие</button>
@@ -86,6 +86,7 @@
    <p id="voice-status">Голос Ксении включается отдельно от игровых звуков.</p>
    <button class="setting-button" id="effects-button" aria-pressed="true">Эффекты: вкл</button>
    <button class="setting-button" id="move-animation-button" aria-pressed="true">Движение фигур: вкл</button>
+   <label for="computer-level">Уровень компьютера</label><select id="computer-level" class="cosmetic-choice"><option value="beginner">Новичок — 5+</option><option value="student" selected>Ученик</option><option value="experienced">Опытный</option><option value="master">Мастер</option></select>
    <label for="move-speed">Скорость фигур</label><select id="move-speed" class="cosmetic-choice"><option value="2">Медленно · 2 клетки/с</option><option value="4" selected>Обычно · 4 клетки/с</option><option value="8">Быстро · 8 клеток/с</option></select>
    <label for="appearance-choice">Оформление</label><select id="appearance-choice" class="cosmetic-choice"></select>
    <label for="companion-choice">Твой спутник</label><select id="companion-choice" class="cosmetic-choice"></select>

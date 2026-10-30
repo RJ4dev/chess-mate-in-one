@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 const mod=await import('../dist/js/experience.js').catch(()=>({}));
-const defaults={detailed:false,sound:false,effects:true,appearance:'garden',companion:'knight',moveAnimation:true,moveSpeed:4};
+const defaults={detailed:false,sound:false,effects:true,appearance:'garden',companion:'knight',moveAnimation:true,moveSpeed:4,computerLevel:'student'};
 test('first visit defaults to simple layout, silent sound and effects',()=>{assert.equal(typeof mod.loadExperience,'function');assert.deepEqual(mod.loadExperience(null),defaults);});
 test('preferences roundtrip without touching rewards',()=>{assert.equal(typeof mod.saveExperience,'function');const map=new Map([['chess-progress','rewards']]);const storage={getItem:k=>map.get(k),setItem:(k,v)=>map.set(k,v)};const prefs={...defaults,detailed:true,sound:true,effects:false,appearance:'sea',companion:'rook',moveSpeed:2,moveAnimation:false};assert.equal(mod.saveExperience(storage,prefs),true);assert.deepEqual(mod.loadExperience(storage),prefs);assert.equal(map.get('chess-progress'),'rewards');});
 test('invalid preferences and denied storage safely use defaults',()=>{assert.equal(typeof mod.loadExperience,'function');for(const raw of ['oops','null','[]','{"detailed":"yes","sound":1,"effects":0}'])assert.deepEqual(mod.loadExperience({getItem:()=>raw}),defaults);assert.equal(mod.saveExperience({setItem:()=>{throw Error('denied');}},{}),false);assert.deepEqual(mod.loadExperience({getItem:()=>{throw Error('denied');}}),defaults);});
@@ -29,4 +29,10 @@ test('every palette keeps piece edges, coordinates and button labels distinct',(
   for(const square of [p.light,p.dark]){assert.ok(contrast('#263c39',square)>=3,p.id+' black piece');assert.ok(contrast('#344e47',square)>=3,p.id+' white outline');assert.ok(contrast('#122b27',square)>=4.5,p.id+' coordinates');}
   assert.ok(contrast(p.light,p.dark)>=1.6,p.id+' squares');assert.ok(contrast('#fffdf4',p.green)>=4.5,p.id+' button');
  }
+});
+test('computer level persists, defaults old preferences to student, and bounds unknown values',()=>{
+ const map=new Map(),storage={getItem:k=>map.get(k),setItem:(k,v)=>map.set(k,v)};
+ for(const computerLevel of ['beginner','student','experienced','master']){mod.saveExperience(storage,{...defaults,computerLevel});assert.equal(mod.loadExperience(storage).computerLevel,computerLevel);}
+ for(const computerLevel of [null,'<invalid>',4]){mod.saveExperience(storage,{...defaults,computerLevel});assert.equal(mod.loadExperience(storage).computerLevel,'student');}
+ assert.equal(mod.loadExperience({getItem:()=>JSON.stringify({detailed:true,sound:true,effects:false})}).computerLevel,'student');
 });
