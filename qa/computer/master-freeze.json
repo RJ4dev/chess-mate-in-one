@@ -1,0 +1,6 @@
+{
+  "algorithm_sha256": "264affa1359a27030ab7e9bc4503d8cb83f587e38b4139504a19d03af0f28c84",
+  "holdout_sha256": "427343e623affac9eae93f293122b9ab84122816b6b0bfeb830c1f630ce5e38d",
+  "status": "Algorithm fixed before opening holdout; training regressions RED -> GREEN13/13 targeted; no coefficient/node budget changes",
+  "frozen_at_utc": "2026-10-30T04:13:00.808964+00:00"
+}

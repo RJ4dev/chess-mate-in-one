@@ -1,0 +1,361 @@
+{
+  "protocol": "v2: seeds 0..7, five fixed tasks; all six pairs x both colours, start position, 36 plies; cutoff games NOT wins",
+  "node": "v24.22.1",
+  "levels": {
+    "beginner": {
+      "passed": 17,
+      "total": 40,
+      "maxNodes": 1,
+      "maxMs": 53,
+      "maxBatchMs": 48,
+      "maxDepth": 0
+    },
+    "student": {
+      "passed": 27,
+      "total": 40,
+      "maxNodes": 26,
+      "maxMs": 86,
+      "maxBatchMs": 59,
+      "maxDepth": 1
+    },
+    "experienced": {
+      "passed": 32,
+      "total": 40,
+      "maxNodes": 120,
+      "maxMs": 478,
+      "maxBatchMs": 65,
+      "maxDepth": 2
+    },
+    "master": {
+      "passed": 40,
+      "total": 40,
+      "maxNodes": 1411,
+      "maxMs": 9685,
+      "maxBatchMs": 265,
+      "maxDepth": 3
+    }
+  },
+  "tasks": [
+    {
+      "level": "beginner",
+      "task": "mate-in-one",
+      "passed": 1,
+      "outOf": 8,
+      "moves": [
+        "f7e8",
+        "g6c6",
+        "g6f6",
+        "g6g7",
+        "f7e7",
+        "g6c2",
+        "g6f5",
+        "g6g5"
+      ]
+    },
+    {
+      "level": "beginner",
+      "task": "free-queen",
+      "passed": 0,
+      "outOf": 8,
+      "moves": [
+        "e1b1",
+        "g1h2",
+        "e1f1",
+        "e1e2",
+        "e1d1",
+        "e1a1",
+        "g1f1",
+        "e1e3"
+      ]
+    },
+    {
+      "level": "beginner",
+      "task": "poisoned-rook",
+      "passed": 8,
+      "outOf": 8,
+      "moves": [
+        "g1h2",
+        "e1b1",
+        "e1h4",
+        "g1f2",
+        "e1f2",
+        "g1f1",
+        "e1c3",
+        "e1e2"
+      ]
+    },
+    {
+      "level": "beginner",
+      "task": "undefended-knight",
+      "passed": 6,
+      "outOf": 8,
+      "moves": [
+        "c3e4",
+        "c3b1",
+        "g1h1",
+        "c3e4",
+        "c3b1",
+        "g1h1",
+        "c3e2",
+        "c3b1"
+      ]
+    },
+    {
+      "level": "beginner",
+      "task": "knight-fork",
+      "passed": 2,
+      "outOf": 8,
+      "moves": [
+        "d5c3",
+        "d5f6",
+        "d5b6",
+        "d5f6",
+        "d5b6",
+        "d5f4",
+        "d5b4",
+        "d5f4"
+      ]
+    },
+    {
+      "level": "student",
+      "task": "mate-in-one",
+      "passed": 8,
+      "outOf": 8,
+      "moves": [
+        "g6g7",
+        "g6g7",
+        "g6g7",
+        "g6g7",
+        "g6g7",
+        "g6g7",
+        "g6g7",
+        "g6g7"
+      ]
+    },
+    {
+      "level": "student",
+      "task": "free-queen",
+      "passed": 8,
+      "outOf": 8,
+      "moves": [
+        "e1e4",
+        "e1e4",
+        "e1e4",
+        "e1e4",
+        "e1e4",
+        "e1e4",
+        "e1e4",
+        "e1e4"
+      ]
+    },
+    {
+      "level": "student",
+      "task": "poisoned-rook",
+      "passed": 0,
+      "outOf": 8,
+      "moves": [
+        "e1e4",
+        "e1e4",
+        "e1e4",
+        "e1e4",
+        "e1e4",
+        "e1e4",
+        "e1e4",
+        "e1e4"
+      ]
+    },
+    {
+      "level": "student",
+      "task": "undefended-knight",
+      "passed": 8,
+      "outOf": 8,
+      "moves": [
+        "c3d5",
+        "c3a4",
+        "c3d5",
+        "c3d5",
+        "c3e4",
+        "c3d5",
+        "c3d5",
+        "c3d5"
+      ]
+    },
+    {
+      "level": "student",
+      "task": "knight-fork",
+      "passed": 3,
+      "outOf": 8,
+      "moves": [
+        "d5f4",
+        "d5f4",
+        "d5f4",
+        "d5f4",
+        "d5f6",
+        "d5f6",
+        "d5f6",
+        "d5f4"
+      ]
+    },
+    {
+      "level": "experienced",
+      "task": "mate-in-one",
+      "passed": 8,
+      "outOf": 8,
+      "moves": [
+        "g6g7",
+        "g6g7",
+        "g6g7",
+        "g6g7",
+        "g6g7",
+        "g6g7",
+        "g6g7",
+        "g6g7"
+      ]
+    },
+    {
+      "level": "experienced",
+      "task": "free-queen",
+      "passed": 8,
+      "outOf": 8,
+      "moves": [
+        "e1e4",
+        "e1e4",
+        "e1e4",
+        "e1e4",
+        "e1e4",
+        "e1e4",
+        "e1e4",
+        "e1e4"
+      ]
+    },
+    {
+      "level": "experienced",
+      "task": "poisoned-rook",
+      "passed": 8,
+      "outOf": 8,
+      "moves": [
+        "e1g3",
+        "e1g3",
+        "e1g3",
+        "e1g3",
+        "e1g3",
+        "e1g3",
+        "e1g3",
+        "e1g3"
+      ]
+    },
+    {
+      "level": "experienced",
+      "task": "undefended-knight",
+      "passed": 8,
+      "outOf": 8,
+      "moves": [
+        "c3d5",
+        "c3d5",
+        "c3d5",
+        "c3d5",
+        "c3d5",
+        "c3d5",
+        "c3d5",
+        "c3d5"
+      ]
+    },
+    {
+      "level": "experienced",
+      "task": "knight-fork",
+      "passed": 0,
+      "outOf": 8,
+      "moves": [
+        "d5e3",
+        "d5e3",
+        "d5e3",
+        "d5e3",
+        "d5e3",
+        "d5e3",
+        "d5e3",
+        "d5e3"
+      ]
+    },
+    {
+      "level": "master",
+      "task": "mate-in-one",
+      "passed": 8,
+      "outOf": 8,
+      "moves": [
+        "g6g7",
+        "g6g7",
+        "g6g7",
+        "g6g7",
+        "g6g7",
+        "g6g7",
+        "g6g7",
+        "g6g7"
+      ]
+    },
+    {
+      "level": "master",
+      "task": "free-queen",
+      "passed": 8,
+      "outOf": 8,
+      "moves": [
+        "e1e4",
+        "e1e4",
+        "e1e4",
+        "e1e4",
+        "e1e4",
+        "e1e4",
+        "e1e4",
+        "e1e4"
+      ]
+    },
+    {
+      "level": "master",
+      "task": "poisoned-rook",
+      "passed": 8,
+      "outOf": 8,
+      "moves": [
+        "e1g3",
+        "e1g3",
+        "e1g3",
+        "e1g3",
+        "e1g3",
+        "e1g3",
+        "e1g3",
+        "e1g3"
+      ]
+    },
+    {
+      "level": "master",
+      "task": "undefended-knight",
+      "passed": 8,
+      "outOf": 8,
+      "moves": [
+        "c3d5",
+        "c3d5",
+        "c3d5",
+        "c3d5",
+        "c3d5",
+        "c3d5",
+        "c3d5",
+        "c3d5"
+      ]
+    },
+    {
+      "level": "master",
+      "task": "knight-fork",
+      "passed": 8,
+      "outOf": 8,
+      "moves": [
+        "d5f6",
+        "d5f6",
+        "d5f6",
+        "d5f6",
+        "d5f6",
+        "d5f6",
+        "d5f6",
+        "d5f6"
+      ]
+    }
+  ],
+  "games": []
+}
