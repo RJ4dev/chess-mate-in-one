@@ -16,6 +16,7 @@ import {blackPawnsAcceptance} from './black-pawns.mjs';
 import {setupChallengeAcceptance} from './setup-challenge.mjs';
 import {setupReentryAcceptance} from './setup-reentry.mjs';
 import {computerLevelsAcceptance} from './computer-levels.mjs';
+import {masterSafetyAcceptance} from './master-safety.mjs';
 import {motionAcceptance} from './motion.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
@@ -44,13 +45,13 @@ function timerGate({origin, seed}) {
   }
   const nativeSet = window.setTimeout.bind(window), nativeClear = window.clearTimeout.bind(window);
   const waiting = new Map();
-  let hold = true, intercepted = 0, executed = 0;
+  let hold = true, intercepted = 0, executed = 0, completed = 0;
   window.setTimeout = (fn, delay, ...args) => {
     if (delay !== 0 || typeof fn !== 'function') return nativeSet(fn, delay, ...args);
     let handle;
     handle = nativeSet(() => {
-      if (hold) { waiting.set(handle, () => fn(...args)); intercepted++; }
-      else fn(...args);
+      if (hold) { waiting.set(handle, () => { completed++; fn(...args); }); intercepted++; }
+      else { completed++; fn(...args); }
     }, 0);
     return handle;
   };
@@ -59,6 +60,7 @@ function timerGate({origin, seed}) {
     get queued() { return waiting.size; },
     get intercepted() { return intercepted; },
     get executed() { return executed; },
+    get completed() { return completed; },
     hold() { hold = true; },
     release() {
       hold = false;
@@ -362,6 +364,7 @@ try {
     await setupReentryAcceptance({origin, entry, scenario, login});
     await motionAcceptance({origin,entry,scenario,release});
     await computerLevelsAcceptance({origin,entry,scenario,release,login});
+    await masterSafetyAcceptance({origin,entry,scenario,release,login});
   }
   report.status = 'passed';
 } catch (error) {

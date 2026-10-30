@@ -1,0 +1,1301 @@
+{
+  "protocol": "v1: PR27 baseline vs candidate, both1600nodes; fixed regression/holdout one deterministic move; four paired games, two starts,24additionalplies, cutoff NOT win/draw",
+  "node": "v24.22.1",
+  "freeze": {
+    "algorithm_sha256": "264affa1359a27030ab7e9bc4503d8cb83f587e38b4139504a19d03af0f28c84",
+    "holdout_sha256": "427343e623affac9eae93f293122b9ab84122816b6b0bfeb830c1f630ce5e38d",
+    "status": "Algorithm fixed before opening holdout; training regressions RED -> GREEN13/13 targeted; no coefficient/node budget changes",
+    "frozen_at_utc": "2026-10-30T04:13:00.808964+00:00"
+  },
+  "positions": [
+    {
+      "group": "regressions",
+      "id": "queen-capture-fallback",
+      "fen": "r1bqkbnr/p1p2ppp/4p3/3pp3/8/3Q1R2/PPPP2PP/RNB1KBN1 w Qkq - 0 8",
+      "old": {
+        "move": "d3d5",
+        "level": "master",
+        "nodes": 1600,
+        "depth": 1,
+        "yields": 201,
+        "elapsedMs": 7869.73,
+        "maxYieldGapMs": 1663.46,
+        "passed": false
+      },
+      "new": {
+        "move": "b1c3",
+        "level": "master",
+        "nodes": 1600,
+        "depth": 2,
+        "yields": 201,
+        "iterations": [
+          {
+            "depth": 1,
+            "quiescence": 0,
+            "move": "d3d5",
+            "score": 192,
+            "nodes": 40
+          },
+          {
+            "depth": 2,
+            "quiescence": 0,
+            "move": "b1c3",
+            "score": 80,
+            "nodes": 400
+          }
+        ],
+        "elapsedMs": 4584.37,
+        "maxYieldGapMs": 46.6,
+        "passed": true
+      }
+    },
+    {
+      "group": "regressions",
+      "id": "rook-capture-fallback",
+      "fen": "r1bqkbnr/pp3ppp/4p3/3pp3/8/3R1R2/PPP3PP/1NBQKBN1 w kq - 0 8",
+      "old": {
+        "move": "d3d5",
+        "level": "master",
+        "nodes": 1600,
+        "depth": 1,
+        "yields": 201,
+        "elapsedMs": 4502.81,
+        "maxYieldGapMs": 42.63,
+        "passed": false
+      },
+      "new": {
+        "move": "b1c3",
+        "level": "master",
+        "nodes": 1600,
+        "depth": 2,
+        "yields": 201,
+        "iterations": [
+          {
+            "depth": 1,
+            "quiescence": 0,
+            "move": "d3d5",
+            "score": 88,
+            "nodes": 41
+          },
+          {
+            "depth": 2,
+            "quiescence": 0,
+            "move": "b1c3",
+            "score": -24,
+            "nodes": 421
+          }
+        ],
+        "elapsedMs": 4500.36,
+        "maxYieldGapMs": 50.57,
+        "passed": true
+      }
+    },
+    {
+      "group": "holdout",
+      "id": "H01",
+      "fen": "r1b2rk1/1p3ppp/pq6/8/2N5/8/PP3PPP/R1BQ1RK1 w - - 0 20",
+      "old": {
+        "move": "c4b6",
+        "level": "master",
+        "nodes": 1600,
+        "depth": 2,
+        "yields": 201,
+        "elapsedMs": 3417.99,
+        "maxYieldGapMs": 52.57,
+        "passed": true
+      },
+      "new": {
+        "move": "c4b6",
+        "level": "master",
+        "nodes": 1600,
+        "depth": 2,
+        "yields": 201,
+        "iterations": [
+          {
+            "depth": 1,
+            "quiescence": 0,
+            "move": "c4b6",
+            "score": 1220,
+            "nodes": 38
+          },
+          {
+            "depth": 2,
+            "quiescence": 0,
+            "move": "c4b6",
+            "score": 1196,
+            "nodes": 130
+          },
+          {
+            "depth": 2,
+            "quiescence": 2,
+            "move": "c4b6",
+            "score": 1232,
+            "nodes": 332
+          }
+        ],
+        "elapsedMs": 3398.73,
+        "maxYieldGapMs": 68.48,
+        "passed": true
+      }
+    },
+    {
+      "group": "holdout",
+      "id": "H02",
+      "fen": "rnbr2k1/pp2qppp/8/8/8/2NQ4/PP3PPP/R1B2RK1 b - - 0 20",
+      "old": {
+        "move": "d8d3",
+        "level": "master",
+        "nodes": 1235,
+        "depth": 3,
+        "yields": 155,
+        "elapsedMs": 3486.26,
+        "maxYieldGapMs": 47.56,
+        "passed": true
+      },
+      "new": {
+        "move": "d8d3",
+        "level": "master",
+        "nodes": 1348,
+        "depth": 3,
+        "yields": 169,
+        "iterations": [
+          {
+            "depth": 1,
+            "quiescence": 0,
+            "move": "d8d3",
+            "score": 876,
+            "nodes": 44
+          },
+          {
+            "depth": 2,
+            "quiescence": 0,
+            "move": "d8d3",
+            "score": 852,
+            "nodes": 157
+          },
+          {
+            "depth": 2,
+            "quiescence": 2,
+            "move": "d8d3",
+            "score": 852,
+            "nodes": 379
+          },
+          {
+            "depth": 3,
+            "quiescence": 2,
+            "move": "d8d3",
+            "score": 876,
+            "nodes": 1348
+          }
+        ],
+        "elapsedMs": 3908.08,
+        "maxYieldGapMs": 48.24,
+        "passed": true
+      }
+    },
+    {
+      "group": "holdout",
+      "id": "H03",
+      "fen": "r1b4k/ppp4p/5n2/8/4R3/8/PPP4P/1K3B2 b - - 0 25",
+      "old": {
+        "move": "f6e4",
+        "level": "master",
+        "nodes": 1600,
+        "depth": 2,
+        "yields": 201,
+        "elapsedMs": 2096.84,
+        "maxYieldGapMs": 20.3,
+        "passed": true
+      },
+      "new": {
+        "move": "f6e4",
+        "level": "master",
+        "nodes": 1600,
+        "depth": 2,
+        "yields": 201,
+        "iterations": [
+          {
+            "depth": 1,
+            "quiescence": 0,
+            "move": "f6e4",
+            "score": 848,
+            "nodes": 23
+          },
+          {
+            "depth": 2,
+            "quiescence": 0,
+            "move": "f6e4",
+            "score": 824,
+            "nodes": 85
+          },
+          {
+            "depth": 2,
+            "quiescence": 2,
+            "move": "f6e4",
+            "score": 824,
+            "nodes": 394
+          }
+        ],
+        "elapsedMs": 2098.94,
+        "maxYieldGapMs": 22.98,
+        "passed": true
+      }
+    },
+    {
+      "group": "holdout",
+      "id": "H04",
+      "fen": "r1b2rk1/ppp3pp/8/5n2/3Q4/8/PPP2PPP/R3R1K1 w - - 0 20",
+      "old": {
+        "move": "d4c4",
+        "level": "master",
+        "nodes": 1600,
+        "depth": 2,
+        "yields": 201,
+        "elapsedMs": 3345.98,
+        "maxYieldGapMs": 34.73,
+        "passed": true
+      },
+      "new": {
+        "move": "d4c4",
+        "level": "master",
+        "nodes": 1600,
+        "depth": 2,
+        "yields": 201,
+        "iterations": [
+          {
+            "depth": 1,
+            "quiescence": 0,
+            "move": "d4a7",
+            "score": 432,
+            "nodes": 50
+          },
+          {
+            "depth": 2,
+            "quiescence": 0,
+            "move": "d4a4",
+            "score": 304,
+            "nodes": 400
+          },
+          {
+            "depth": 2,
+            "quiescence": 2,
+            "move": "d4c4",
+            "score": 328,
+            "nodes": 753
+          }
+        ],
+        "elapsedMs": 3573.42,
+        "maxYieldGapMs": 40.62,
+        "passed": true
+      }
+    },
+    {
+      "group": "holdout",
+      "id": "H05",
+      "fen": "1k6/ppp3pp/3b4/8/7q/8/PPP2PPP/R4RK1 b - - 0 30",
+      "old": {
+        "move": "h4h2",
+        "level": "master",
+        "nodes": 38,
+        "depth": 1,
+        "yields": 5,
+        "elapsedMs": 37.74,
+        "maxYieldGapMs": 9.07,
+        "passed": true
+      },
+      "new": {
+        "move": "h4h2",
+        "level": "master",
+        "nodes": 38,
+        "depth": 1,
+        "yields": 5,
+        "iterations": [
+          {
+            "depth": 1,
+            "quiescence": 0,
+            "move": "h4h2",
+            "score": 99999,
+            "nodes": 38
+          }
+        ],
+        "elapsedMs": 40.89,
+        "maxYieldGapMs": 11.78,
+        "passed": true
+      }
+    },
+    {
+      "group": "holdout",
+      "id": "H06",
+      "fen": "6k1/5ppp/8/7n/2B5/8/5PPP/R5K1 w - - 0 30",
+      "old": {
+        "move": "a1a8",
+        "level": "master",
+        "nodes": 30,
+        "depth": 1,
+        "yields": 4,
+        "elapsedMs": 11.37,
+        "maxYieldGapMs": 3.78,
+        "passed": true
+      },
+      "new": {
+        "move": "a1a8",
+        "level": "master",
+        "nodes": 30,
+        "depth": 1,
+        "yields": 4,
+        "iterations": [
+          {
+            "depth": 1,
+            "quiescence": 0,
+            "move": "a1a8",
+            "score": 99999,
+            "nodes": 30
+          }
+        ],
+        "elapsedMs": 12.5,
+        "maxYieldGapMs": 4.23,
+        "passed": true
+      }
+    },
+    {
+      "group": "holdout",
+      "id": "H07",
+      "fen": "1k6/ppp3pp/3b4/8/7q/8/PPP2PPP/R4RK1 w - - 0 30",
+      "old": {
+        "move": "g2g3",
+        "level": "master",
+        "nodes": 977,
+        "depth": 3,
+        "yields": 123,
+        "elapsedMs": 1359.99,
+        "maxYieldGapMs": 23.61,
+        "passed": true
+      },
+      "new": {
+        "move": "g2g3",
+        "level": "master",
+        "nodes": 1085,
+        "depth": 3,
+        "yields": 136,
+        "iterations": [
+          {
+            "depth": 1,
+            "quiescence": 0,
+            "move": "a2a4",
+            "score": -148,
+            "nodes": 20
+          },
+          {
+            "depth": 2,
+            "quiescence": 0,
+            "move": "f2f3",
+            "score": -256,
+            "nodes": 162
+          },
+          {
+            "depth": 2,
+            "quiescence": 2,
+            "move": "g2g3",
+            "score": -152,
+            "nodes": 447
+          },
+          {
+            "depth": 3,
+            "quiescence": 2,
+            "move": "g2g3",
+            "score": -148,
+            "nodes": 1085
+          }
+        ],
+        "elapsedMs": 1471.78,
+        "maxYieldGapMs": 27.63,
+        "passed": true
+      }
+    },
+    {
+      "group": "holdout",
+      "id": "H08",
+      "fen": "2b3k1/pp3ppp/8/8/R3r3/8/PP3PPP/4K3 w - - 0 25",
+      "old": {
+        "move": "a4e4",
+        "level": "master",
+        "nodes": 501,
+        "depth": 3,
+        "yields": 63,
+        "elapsedMs": 390.07,
+        "maxYieldGapMs": 11.74,
+        "passed": true
+      },
+      "new": {
+        "move": "a4e4",
+        "level": "master",
+        "nodes": 525,
+        "depth": 3,
+        "yields": 66,
+        "iterations": [
+          {
+            "depth": 1,
+            "quiescence": 0,
+            "move": "a4e4",
+            "score": 164,
+            "nodes": 4
+          },
+          {
+            "depth": 2,
+            "quiescence": 0,
+            "move": "a4e4",
+            "score": 140,
+            "nodes": 28
+          },
+          {
+            "depth": 2,
+            "quiescence": 2,
+            "move": "a4e4",
+            "score": 140,
+            "nodes": 54
+          },
+          {
+            "depth": 3,
+            "quiescence": 2,
+            "move": "a4e4",
+            "score": 148,
+            "nodes": 525
+          }
+        ],
+        "elapsedMs": 439.94,
+        "maxYieldGapMs": 12.41,
+        "passed": true
+      }
+    }
+  ],
+  "games": [
+    {
+      "start": [],
+      "white": "old",
+      "black": "new",
+      "result": "cutoff",
+      "moves": [
+        "b1c3",
+        "b8c6",
+        "g1f3",
+        "g8f6",
+        "a2a4",
+        "a7a5",
+        "d2d4",
+        "h7h5",
+        "c1e3",
+        "d7d5",
+        "f3e5",
+        "c6e5",
+        "d4e5",
+        "f6d7",
+        "d1d5",
+        "c7c6",
+        "d5d4",
+        "c6c5",
+        "d4d5",
+        "e7e6",
+        "d5e4",
+        "f8e7",
+        "b2b3",
+        "g7g5"
+      ],
+      "fen": "r1bqk2r/1p1nbp2/4p3/p1p1P1pp/P3Q3/1PN1B3/2P1PPPP/R3KB1R w KQkq - 0 13",
+      "materialWhite": 100,
+      "samples": [
+        {
+          "engine": "old",
+          "nodes": 1223,
+          "depth": 3,
+          "elapsedMs": 1448.54,
+          "maxYieldGapMs": 18.41
+        },
+        {
+          "engine": "new",
+          "nodes": 1577,
+          "depth": 3,
+          "elapsedMs": 2146.42,
+          "maxYieldGapMs": 24.49
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 2278.86,
+          "maxYieldGapMs": 21.3
+        },
+        {
+          "engine": "new",
+          "nodes": 1044,
+          "depth": 3,
+          "elapsedMs": 1515.6,
+          "maxYieldGapMs": 16.26
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 2547.43,
+          "maxYieldGapMs": 22.9
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 2672.88,
+          "maxYieldGapMs": 22.99
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3207.86,
+          "maxYieldGapMs": 34.44
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3190.72,
+          "maxYieldGapMs": 37.94
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 2989.83,
+          "maxYieldGapMs": 26.66
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 5131.36,
+          "maxYieldGapMs": 122.56
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 6927.55,
+          "maxYieldGapMs": 175.99
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3955.44,
+          "maxYieldGapMs": 34.06
+        },
+        {
+          "engine": "old",
+          "nodes": 1378,
+          "depth": 3,
+          "elapsedMs": 3037.59,
+          "maxYieldGapMs": 37.09
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3674.17,
+          "maxYieldGapMs": 39.42
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3243.78,
+          "maxYieldGapMs": 45.7
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 4263.72,
+          "maxYieldGapMs": 50.65
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 2757.05,
+          "maxYieldGapMs": 46.45
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 4510.79,
+          "maxYieldGapMs": 202.68
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3166.27,
+          "maxYieldGapMs": 103.92
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 4330.03,
+          "maxYieldGapMs": 49.89
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3712.54,
+          "maxYieldGapMs": 81.94
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 5043.12,
+          "maxYieldGapMs": 187.75
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 4246.44,
+          "maxYieldGapMs": 35.88
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 4463.1,
+          "maxYieldGapMs": 43.22
+        }
+      ]
+    },
+    {
+      "start": [],
+      "white": "new",
+      "black": "old",
+      "result": "cutoff",
+      "moves": [
+        "b1c3",
+        "b8c6",
+        "g1f3",
+        "g8f6",
+        "a2a4",
+        "a7a5",
+        "h2h4",
+        "d7d5",
+        "d2d4",
+        "c8e6",
+        "c1e3",
+        "h7h5",
+        "f3e5",
+        "c6e5",
+        "d4e5",
+        "f6d7",
+        "f2f4",
+        "c7c6",
+        "e3d4",
+        "c6c5",
+        "d4e3",
+        "d5d4",
+        "f4f5",
+        "e6f5"
+      ],
+      "fen": "r2qkb1r/1p1nppp1/8/p1p1Pb1p/P2p3P/2N1B3/1PP1P1P1/R2QKB1R w KQkq - 0 13",
+      "materialWhite": -100,
+      "samples": [
+        {
+          "engine": "new",
+          "nodes": 1299,
+          "depth": 3,
+          "elapsedMs": 1516.62,
+          "maxYieldGapMs": 18.91
+        },
+        {
+          "engine": "old",
+          "nodes": 1489,
+          "depth": 3,
+          "elapsedMs": 1994.25,
+          "maxYieldGapMs": 27.32
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 2998.99,
+          "maxYieldGapMs": 194.38
+        },
+        {
+          "engine": "old",
+          "nodes": 977,
+          "depth": 3,
+          "elapsedMs": 1914.11,
+          "maxYieldGapMs": 34.45
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3390.82,
+          "maxYieldGapMs": 44.51
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 4977.24,
+          "maxYieldGapMs": 58.84
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 5036.65,
+          "maxYieldGapMs": 48.39
+        },
+        {
+          "engine": "old",
+          "nodes": 1519,
+          "depth": 3,
+          "elapsedMs": 4475.9,
+          "maxYieldGapMs": 41.65
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3583.69,
+          "maxYieldGapMs": 30.54
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 4050.09,
+          "maxYieldGapMs": 44.18
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 4195.21,
+          "maxYieldGapMs": 50.94
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 4131.47,
+          "maxYieldGapMs": 33.98
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 5831.3,
+          "maxYieldGapMs": 49.9
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 7180.1,
+          "maxYieldGapMs": 243.26
+        },
+        {
+          "engine": "new",
+          "nodes": 1429,
+          "depth": 3,
+          "elapsedMs": 4531.04,
+          "maxYieldGapMs": 69.56
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 4451.33,
+          "maxYieldGapMs": 60.26
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3890.09,
+          "maxYieldGapMs": 31.85
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 4396.6,
+          "maxYieldGapMs": 131.64
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 6170,
+          "maxYieldGapMs": 88.77
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 6828.08,
+          "maxYieldGapMs": 73.16
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 4888.24,
+          "maxYieldGapMs": 47.64
+        },
+        {
+          "engine": "old",
+          "nodes": 1345,
+          "depth": 3,
+          "elapsedMs": 3288.77,
+          "maxYieldGapMs": 34.75
+        },
+        {
+          "engine": "new",
+          "nodes": 1400,
+          "depth": 3,
+          "elapsedMs": 2808.47,
+          "maxYieldGapMs": 27.73
+        },
+        {
+          "engine": "old",
+          "nodes": 1457,
+          "depth": 3,
+          "elapsedMs": 3378.48,
+          "maxYieldGapMs": 34.27
+        }
+      ]
+    },
+    {
+      "start": [
+        "e2e4",
+        "e7e5",
+        "g1f3",
+        "b8c6"
+      ],
+      "white": "old",
+      "black": "new",
+      "result": "cutoff",
+      "moves": [
+        "b1c3",
+        "g8e7",
+        "f1b5",
+        "a7a5",
+        "a2a4",
+        "h7h5",
+        "h2h4",
+        "b7b6",
+        "b5c4",
+        "d7d6",
+        "f3g5",
+        "f7f5",
+        "g5f7",
+        "d8d7",
+        "f7h8",
+        "g7g6",
+        "h8f7",
+        "f5f4",
+        "c3b5",
+        "c6b4",
+        "c2c3",
+        "b4c6",
+        "f7g5",
+        "c6d8"
+      ],
+      "fen": "r1bnkb2/2pqn3/1p1p2p1/pN2p1Np/P1B1Pp1P/2P5/1P1P1PP1/R1BQK2R w KQq - 3 15",
+      "materialWhite": 500,
+      "samples": [
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3377.53,
+          "maxYieldGapMs": 42.11
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3649.37,
+          "maxYieldGapMs": 125.93
+        },
+        {
+          "engine": "old",
+          "nodes": 1564,
+          "depth": 3,
+          "elapsedMs": 2865.81,
+          "maxYieldGapMs": 48.72
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 4189.13,
+          "maxYieldGapMs": 106.71
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3237.8,
+          "maxYieldGapMs": 43.39
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3314.49,
+          "maxYieldGapMs": 31.45
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 2811.38,
+          "maxYieldGapMs": 30.4
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3353.65,
+          "maxYieldGapMs": 42.29
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3097.71,
+          "maxYieldGapMs": 34.89
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 4211.83,
+          "maxYieldGapMs": 127.15
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3783.07,
+          "maxYieldGapMs": 146.33
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 4366.92,
+          "maxYieldGapMs": 46.34
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 4547.3,
+          "maxYieldGapMs": 59.67
+        },
+        {
+          "engine": "new",
+          "nodes": 1441,
+          "depth": 3,
+          "elapsedMs": 5013.24,
+          "maxYieldGapMs": 48.56
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3499.74,
+          "maxYieldGapMs": 47.77
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 4636.83,
+          "maxYieldGapMs": 48.25
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3485,
+          "maxYieldGapMs": 34.98
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 4346.19,
+          "maxYieldGapMs": 38.24
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3814.63,
+          "maxYieldGapMs": 37.69
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3662.88,
+          "maxYieldGapMs": 35.03
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3876.78,
+          "maxYieldGapMs": 34.28
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 4275.61,
+          "maxYieldGapMs": 41.3
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3452.31,
+          "maxYieldGapMs": 34.74
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3813.88,
+          "maxYieldGapMs": 122.11
+        }
+      ]
+    },
+    {
+      "start": [
+        "e2e4",
+        "e7e5",
+        "g1f3",
+        "b8c6"
+      ],
+      "white": "new",
+      "black": "old",
+      "result": "cutoff",
+      "moves": [
+        "b1c3",
+        "g8e7",
+        "f1c4",
+        "a7a5",
+        "a2a4",
+        "h7h5",
+        "h2h4",
+        "b7b6",
+        "b2b3",
+        "d7d6",
+        "f3g5",
+        "f7f5",
+        "g5f7",
+        "d8d7",
+        "f7h8",
+        "g7g6",
+        "h8f7",
+        "f5f4",
+        "c3b5",
+        "c6b4",
+        "c2c3",
+        "b4c6",
+        "f7g5",
+        "c6d8"
+      ],
+      "fen": "r1bnkb2/2pqn3/1p1p2p1/pN2p1Np/P1B1Pp1P/1PP5/3P1PP1/R1BQK2R w KQq - 3 15",
+      "materialWhite": 500,
+      "samples": [
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3210.64,
+          "maxYieldGapMs": 24.26
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3378.68,
+          "maxYieldGapMs": 36.06
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 2808.48,
+          "maxYieldGapMs": 29.82
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3993.01,
+          "maxYieldGapMs": 43.24
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3231.17,
+          "maxYieldGapMs": 37.33
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3984.79,
+          "maxYieldGapMs": 74.66
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3138.51,
+          "maxYieldGapMs": 34.76
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3762.34,
+          "maxYieldGapMs": 36.52
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3701.93,
+          "maxYieldGapMs": 36.2
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 6843.48,
+          "maxYieldGapMs": 471.12
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 4669.7,
+          "maxYieldGapMs": 199.86
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 5149.77,
+          "maxYieldGapMs": 200.32
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3693.08,
+          "maxYieldGapMs": 43.18
+        },
+        {
+          "engine": "old",
+          "nodes": 1392,
+          "depth": 3,
+          "elapsedMs": 4214.83,
+          "maxYieldGapMs": 129.26
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3791.28,
+          "maxYieldGapMs": 42.28
+        },
+        {
+          "engine": "old",
+          "nodes": 1524,
+          "depth": 3,
+          "elapsedMs": 4284.41,
+          "maxYieldGapMs": 46.35
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 4500.7,
+          "maxYieldGapMs": 59.28
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 4351.07,
+          "maxYieldGapMs": 51.36
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3456.41,
+          "maxYieldGapMs": 36.76
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3922.58,
+          "maxYieldGapMs": 43.09
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3703.1,
+          "maxYieldGapMs": 33.57
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 4005.8,
+          "maxYieldGapMs": 46.49
+        },
+        {
+          "engine": "new",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3340,
+          "maxYieldGapMs": 36.4
+        },
+        {
+          "engine": "old",
+          "nodes": 1600,
+          "depth": 2,
+          "elapsedMs": 3372.24,
+          "maxYieldGapMs": 36.57
+        }
+      ]
+    }
+  ],
+  "timing": "Local concurrent-load sample. Wall intervals between cooperative callbacks exclude explicit setImmediate scheduling wait but include GC/OS preemption; NOT Android. Use separate master-performance-result.json for three alternating-order repetitions without deliberate parallel local suites.",
+  "validation": "Reported selected moves independently rechecked with the strengthened every-legal-reply valuable-piece safety criterion after review; classifications unchanged. Algorithm hash stayed frozen; no tuning to holdout."
+}

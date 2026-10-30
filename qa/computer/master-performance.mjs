@@ -1,0 +1,5 @@
+// Isolated follow-up: run separately from suites/games to reduce local load noise.
+import fs from 'node:fs';import {chooseComputerMove as oldMove} from './baseline-pr27.mjs';import {chooseComputerMove as newMove} from '../../dist/js/computer.js';import {measured} from './measure-search.mjs';
+const rows=JSON.parse(fs.readFileSync(new URL('./master-regressions.json',import.meta.url))),report={protocol:'Two regression FENs x both engines x3 repeats, alternating engine order; same1600nodes; setImmediate yields; no deliberate parallel local workloads. Wall times include GC/OS preemption; not Android or an Elo claim.',node:process.version,samples:[]};
+for(let repeat=0;repeat<3;repeat++)for(const row of rows)for(const name of repeat%2?['new','old']:['old','new']){const sample=await measured(name==='old'?oldMove:newMove,row.fen);report.samples.push({id:row.id,engine:name,repeat,...sample});console.error(row.id,name,repeat,sample.elapsedMs,sample.maxYieldGapMs);}
+console.log(JSON.stringify(report,null,2));

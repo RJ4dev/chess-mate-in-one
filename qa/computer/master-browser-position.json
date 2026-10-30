@@ -1,0 +1,27 @@
+{
+  "description": "Reachable complex black-to-move fixture for actual UI search/interruptions; not a phone recording or one of the constructed defect FENs",
+  "moves": [
+    "a2a3",
+    "d7d5",
+    "c2c3",
+    "d5d4",
+    "c3d4",
+    "e7e5",
+    "d2d3",
+    "e5e4",
+    "d3e4",
+    "f7f5",
+    "e2e3",
+    "h7h5",
+    "b1c3",
+    "h8h6",
+    "b2b4",
+    "h6f6",
+    "g1f3",
+    "d8d6",
+    "f3g1"
+  ],
+  "fen": "rnb1kbn1/ppp3p1/3q1r2/5p1p/1P1PP3/P1N1P3/5PPP/R1BQKBNR b KQq - 4 10",
+  "oldMove": "e8d8",
+  "expected": "e8d8"
+}

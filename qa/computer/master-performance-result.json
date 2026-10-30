@@ -1,0 +1,246 @@
+{
+  "protocol": "Two regression FENs x both engines x3 repeats, alternating engine order; same1600nodes; setImmediate yields; no deliberate parallel local workloads. Wall times include GC/OS preemption; not Android or an Elo claim.",
+  "node": "v24.22.1",
+  "samples": [
+    {
+      "id": "queen-capture-fallback",
+      "engine": "old",
+      "repeat": 0,
+      "move": "d3d5",
+      "level": "master",
+      "nodes": 1600,
+      "depth": 1,
+      "yields": 201,
+      "elapsedMs": 5851.83,
+      "maxYieldGapMs": 96.29
+    },
+    {
+      "id": "queen-capture-fallback",
+      "engine": "new",
+      "repeat": 0,
+      "move": "b1c3",
+      "level": "master",
+      "nodes": 1600,
+      "depth": 2,
+      "yields": 201,
+      "iterations": [
+        {
+          "depth": 1,
+          "quiescence": 0,
+          "move": "d3d5",
+          "score": 192,
+          "nodes": 40
+        },
+        {
+          "depth": 2,
+          "quiescence": 0,
+          "move": "b1c3",
+          "score": 80,
+          "nodes": 400
+        }
+      ],
+      "elapsedMs": 6948.57,
+      "maxYieldGapMs": 143.1
+    },
+    {
+      "id": "rook-capture-fallback",
+      "engine": "old",
+      "repeat": 0,
+      "move": "d3d5",
+      "level": "master",
+      "nodes": 1600,
+      "depth": 1,
+      "yields": 201,
+      "elapsedMs": 5327.51,
+      "maxYieldGapMs": 154.69
+    },
+    {
+      "id": "rook-capture-fallback",
+      "engine": "new",
+      "repeat": 0,
+      "move": "b1c3",
+      "level": "master",
+      "nodes": 1600,
+      "depth": 2,
+      "yields": 201,
+      "iterations": [
+        {
+          "depth": 1,
+          "quiescence": 0,
+          "move": "d3d5",
+          "score": 88,
+          "nodes": 41
+        },
+        {
+          "depth": 2,
+          "quiescence": 0,
+          "move": "b1c3",
+          "score": -24,
+          "nodes": 421
+        }
+      ],
+      "elapsedMs": 5248.37,
+      "maxYieldGapMs": 208.35
+    },
+    {
+      "id": "queen-capture-fallback",
+      "engine": "new",
+      "repeat": 1,
+      "move": "b1c3",
+      "level": "master",
+      "nodes": 1600,
+      "depth": 2,
+      "yields": 201,
+      "iterations": [
+        {
+          "depth": 1,
+          "quiescence": 0,
+          "move": "d3d5",
+          "score": 192,
+          "nodes": 40
+        },
+        {
+          "depth": 2,
+          "quiescence": 0,
+          "move": "b1c3",
+          "score": 80,
+          "nodes": 400
+        }
+      ],
+      "elapsedMs": 4609.87,
+      "maxYieldGapMs": 64.39
+    },
+    {
+      "id": "queen-capture-fallback",
+      "engine": "old",
+      "repeat": 1,
+      "move": "d3d5",
+      "level": "master",
+      "nodes": 1600,
+      "depth": 1,
+      "yields": 201,
+      "elapsedMs": 4510.37,
+      "maxYieldGapMs": 42.87
+    },
+    {
+      "id": "rook-capture-fallback",
+      "engine": "new",
+      "repeat": 1,
+      "move": "b1c3",
+      "level": "master",
+      "nodes": 1600,
+      "depth": 2,
+      "yields": 201,
+      "iterations": [
+        {
+          "depth": 1,
+          "quiescence": 0,
+          "move": "d3d5",
+          "score": 88,
+          "nodes": 41
+        },
+        {
+          "depth": 2,
+          "quiescence": 0,
+          "move": "b1c3",
+          "score": -24,
+          "nodes": 421
+        }
+      ],
+      "elapsedMs": 5052.29,
+      "maxYieldGapMs": 110.8
+    },
+    {
+      "id": "rook-capture-fallback",
+      "engine": "old",
+      "repeat": 1,
+      "move": "d3d5",
+      "level": "master",
+      "nodes": 1600,
+      "depth": 1,
+      "yields": 201,
+      "elapsedMs": 4563.95,
+      "maxYieldGapMs": 45.75
+    },
+    {
+      "id": "queen-capture-fallback",
+      "engine": "old",
+      "repeat": 2,
+      "move": "d3d5",
+      "level": "master",
+      "nodes": 1600,
+      "depth": 1,
+      "yields": 201,
+      "elapsedMs": 4457.53,
+      "maxYieldGapMs": 49.09
+    },
+    {
+      "id": "queen-capture-fallback",
+      "engine": "new",
+      "repeat": 2,
+      "move": "b1c3",
+      "level": "master",
+      "nodes": 1600,
+      "depth": 2,
+      "yields": 201,
+      "iterations": [
+        {
+          "depth": 1,
+          "quiescence": 0,
+          "move": "d3d5",
+          "score": 192,
+          "nodes": 40
+        },
+        {
+          "depth": 2,
+          "quiescence": 0,
+          "move": "b1c3",
+          "score": 80,
+          "nodes": 400
+        }
+      ],
+      "elapsedMs": 4705.82,
+      "maxYieldGapMs": 45.81
+    },
+    {
+      "id": "rook-capture-fallback",
+      "engine": "old",
+      "repeat": 2,
+      "move": "d3d5",
+      "level": "master",
+      "nodes": 1600,
+      "depth": 1,
+      "yields": 201,
+      "elapsedMs": 4742.6,
+      "maxYieldGapMs": 79.89
+    },
+    {
+      "id": "rook-capture-fallback",
+      "engine": "new",
+      "repeat": 2,
+      "move": "b1c3",
+      "level": "master",
+      "nodes": 1600,
+      "depth": 2,
+      "yields": 201,
+      "iterations": [
+        {
+          "depth": 1,
+          "quiescence": 0,
+          "move": "d3d5",
+          "score": 88,
+          "nodes": 41
+        },
+        {
+          "depth": 2,
+          "quiescence": 0,
+          "move": "b1c3",
+          "score": -24,
+          "nodes": 421
+        }
+      ],
+      "elapsedMs": 6221.88,
+      "maxYieldGapMs": 208.39
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+[
+  {
+    "id": "queen-capture-fallback",
+    "fen": "r1bqkbnr/p1p2ppp/4p3/3pp3/8/3Q1R2/PPPP2PP/RNB1KBN1 w Qkq - 0 8",
+    "bad": "d3d5",
+    "reply": "e6d5",
+    "safe": "d3e3",
+    "piece": "q",
+    "netLoss": 800,
+    "reason": "Qxd5 gains a pawn, exd5 captures the queen; neither rook can recapture on d5. Qe3 has no immediate queen loss. Constructed position, not a recording from the owner's phone."
+  },
+  {
+    "id": "rook-capture-fallback",
+    "fen": "r1bqkbnr/pp3ppp/4p3/3pp3/8/3R1R2/PPP3PP/1NBQKBN1 w kq - 0 8",
+    "bad": "d3d5",
+    "reply": "e6d5",
+    "safe": "d3e3",
+    "piece": "r",
+    "netLoss": 400,
+    "reason": "Rxd5 exd5 loses rook for pawn. Qxd5 is legal but fails to Qxd5 from d8, losing the queen too. Re3 avoids this sequence. Constructed position, not phone recording.",
+    "recaptureTrap": [
+      "d1d5",
+      "d8d5"
+    ]
+  }
+]

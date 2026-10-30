@@ -18,7 +18,7 @@ function evaluate(c,noticeThreats=false){let total=0;for(const p of c.board().fl
 // Only legal chess.js moves are considered; the UI owns repetition history and animation.
 export async function chooseComputerMove(fen,{level='student',seed=0,stats={},isCancelled=()=>false,yieldControl=()=>new Promise(r=>setTimeout(r,0))}={}){
  const config=COMPUTER_LEVELS.find(l=>l.id===normalizeComputerLevel(level)),c=new Chess(fen);
- Object.assign(stats,{level:config.id,nodes:0,depth:0,yields:0});
+ Object.assign(stats,{level:config.id,nodes:0,depth:0,yields:0,iterations:[]});
  const cooperate=async()=>{stats.yields++;await yieldControl();return isCancelled();};
  if(isCancelled()||c.isGameOver())return null;
  if(await cooperate())return null;
@@ -50,15 +50,18 @@ export async function chooseComputerMove(fen,{level='student',seed=0,stats={},is
   return best;
  }
  let best=uci(moves[0]);
- for(let depth=1;depth<=config.depth;depth++){
+ // Establish a full reply-aware fallback before spending the budget on extensions.
+ // Otherwise an unfinished depth2+q search can leave only a greedy one-ply move.
+ const passes=config.id==='master'?[{depth:1,quiet:0},{depth:2,quiet:0},{depth:2,quiet:2},{depth:3,quiet:2}]:Array.from({length:config.depth},(_,i)=>({depth:i+1,quiet:0}));
+ for(const {depth,quiet} of passes){
   let candidate=best,score=-Infinity;
   // Previous principal move first, but only a COMPLETE iteration replaces best.
   const roots=[...moves].sort((a,b)=>Number(uci(b)===best)-Number(uci(a)===best));
-  try{for(const m of roots){c.move(m);let value;try{value=-await search(depth-1,-Infinity,-score,1,config.id==='master'&&depth>1?2:0);}finally{c.undo();}
+  try{for(const m of roots){c.move(m);let value;try{value=-await search(depth-1,-Infinity,-score,1,quiet);}finally{c.undo();}
    if(config.id==='student'&&Math.abs(value)<MATE-100)value+=(hash(fen+':'+seed+':'+uci(m))%161)-80;
    if(value>score){score=value;candidate=uci(m);}
   }}catch(error){if(error!==STOP)throw error;break;}
-  best=candidate;stats.depth=depth;if(score>=MATE-100)break;
+  best=candidate;stats.depth=depth;stats.iterations.push({depth,quiescence:quiet,move:best,score,nodes:stats.nodes});if(score>=MATE-100)break;
  }
  return isCancelled()?null:best;
 }
